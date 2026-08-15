@@ -1,0 +1,17 @@
+import { extractAmount, extractReference, matchOperationType, MOBILE_MONEY_VERB_MAP, type Parser } from './parser';
+
+export const airtelMoneyParser: Parser = {
+  parse(msg) {
+    const amount = extractAmount(msg.body);
+    const type = matchOperationType(msg.body, MOBILE_MONEY_VERB_MAP);
+    if (amount === null || type === null) return null;
+
+    return {
+      amount,
+      currency: 'MGA',
+      type,
+      reference: extractReference(msg.body),
+      occurredAt: msg.receivedAt,
+    };
+  },
+};

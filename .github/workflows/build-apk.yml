@@ -1,0 +1,28 @@
+# Template only — not wired up yet. Requires an EXPO_TOKEN repo secret
+# (from an Expo account, via `eas login` + a robot/access token) and
+# `eas init` to have been run once locally to set app.config.ts's
+# extra.eas.projectId. Trigger manually until that setup is done.
+name: Build Android APK (EAS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: eas build --platform android --profile production --non-interactive
