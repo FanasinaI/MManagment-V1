@@ -4,6 +4,7 @@ const config: ExpoConfig = {
   name: 'MManagment',
   slug: 'mmanagment',
   scheme: 'mmanagment',
+  owner: 'fanasinai',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -44,6 +45,11 @@ const config: ExpoConfig = {
     'expo-local-authentication',
     'expo-sharing',
   ],
+  extra: {
+    eas: {
+      projectId: 'cf2c1e3f-00e8-4f19-931b-ef1fa1994ca4',
+    },
+  },
 };
 
 export default config;
