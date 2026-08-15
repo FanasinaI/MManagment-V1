@@ -1,64 +1,85 @@
 # MManagment
 
-Application personnelle de gestion d'argent pour Android — hors ligne, sans backend, avec détection sélective des
-SMS financiers en liste blanche stricte. Spécification complète : `CDC_MManagment_Offline_SMS_Whitelist_Complet.pdf`.
+Application personnelle de gestion d'argent pour Android, pensée pour fonctionner **entièrement hors ligne**.
+Aucun serveur, aucune API bancaire externe : les comptes, transactions, budgets et objectifs sont gérés localement,
+avec une détection optionnelle des SMS financiers (MVola, Airtel Money, Orange Money, banques) selon une politique
+stricte de liste blanche.
 
-## Stack
+## Fonctionnalités
 
-React Native + Expo (SDK 57) + TypeScript · Expo Router · Zustand · expo-sqlite · expo-secure-store ·
-expo-notifications · expo-crypto (chiffrement AES-GCM) · Zod · Vitest.
+- **Comptes** multi-supports : mobile money, banque, espèces, carte, épargne
+- **Transactions** manuelles (revenu, dépense, transfert, frais, retrait, dépôt) et détectées automatiquement par SMS
+- **Tableau de bord** : solde total, soldes par compte, cash-flow
+- **Budgets** par catégorie et période, avec alertes de seuil
+- **Épargne** : poches et objectifs avec suivi de progression
+- **Notifications locales** (rappels d'épargne, alertes de budget, échéances) — aucun serveur push requis
+- **Détection SMS** en liste blanche stricte : seuls les expéditeurs explicitement autorisés sont analysés, avec
+  double filtrage sur le contenu (montant, devise, type d'opération) et anti-doublon
+- **Sauvegarde chiffrée** (AES-256-GCM) exportable et restaurable, avec code PIN et déverrouillage biométrique
+
+## Stack technique
+
+| Composant | Technologie |
+|---|---|
+| Application | React Native + Expo (SDK 57) + TypeScript |
+| Navigation | Expo Router |
+| État | Zustand |
+| Base de données | SQLite (expo-sqlite), migrations versionnées |
+| Sécurité | expo-secure-store, expo-crypto (AES-GCM), PIN + biométrie |
+| Notifications | expo-notifications (locales) |
+| Validation | Zod |
+| Tests | Vitest |
+| Distribution | EAS Build (APK) |
+
+## Sécurité
+
+- Toutes les données financières restent sur l'appareil ; aucune n'est envoyée à un service tiers.
+- Un SMS provenant d'une source non explicitement autorisée n'est **jamais** analysé ni stocké.
+- Le contenu brut des SMS n'est pas conservé après traitement, sauf activation explicite d'un mode diagnostic.
+- Les sauvegardes sont chiffrées (AES-256-GCM) avant export.
+- Aucune donnée financière ni sauvegarde (`*.mmbak`, `*.db`, `*.sqlite`) ne doit être commitée dans ce dépôt — elles
+  sont exclues via `.gitignore`.
+- Accès protégé par code PIN et biométrie.
 
 ## Démarrage
 
 ```bash
 npm install
-npx expo start          # nécessite un appareil/émulateur Android ou Expo Go
-npx expo start --web    # aperçu web (le seul mode testable sans outillage Android)
+npx expo start           # nécessite un appareil/émulateur, ou Expo Go
+npx expo start --web     # aperçu web
 ```
 
-Vérifications :
+Scripts utiles :
 
 ```bash
-npx tsc --noEmit          # types
-npx vitest run             # tests unitaires de la couche métier
-npx expo-doctor            # cohérence des dépendances
+npx tsc --noEmit    # vérification des types
+npx vitest run       # tests unitaires
+npx expo-doctor       # cohérence des dépendances/config
 ```
 
-## État du projet
+## Build Android (développement)
 
-Le cœur de l'application (comptes, transactions manuelles, tableau de bord, budgets, épargne, objectifs,
-notifications locales, moteur de détection SMS, sauvegarde chiffrée avec restauration) est implémenté et testé.
-
-Le module natif Android (`modules/sms-receiver/`) qui reçoit réellement les SMS est **écrit mais non vérifié** :
-cette machine n'a ni Android Studio ni JDK, donc ce code Kotlin n'a jamais été compilé. La logique de filtrage/parsing
-en amont (allowlist, double filtrage, parsers, anti-doublon) est en revanche complète et testée
-(`src/domain/sms/`). Voir la section suivante pour le tester réellement.
-
-## Prochaine étape : tester le module SMS sur ton téléphone
-
-Pas besoin d'Android Studio — EAS Build compile dans le cloud. Étapes :
+Le module de réception SMS est natif (Android/Kotlin) et nécessite un **Development Build** — Expo Go seul ne
+suffit pas pour cette partie.
 
 ```bash
-npm install -g eas-cli        # ou npx eas-cli à chaque commande
-eas login                      # crée un compte sur expo.dev si tu n'en as pas encore
-eas init                       # lie ce projet à ton compte (ajoute un projectId à app.config.ts)
+npm install -g eas-cli
+eas login
 eas build --profile development --platform android
 ```
 
-`eas build` te donne un lien/QR code : télécharge l'APK généré et installe-le sur ton téléphone (à la place d'Expo
-Go pour ce projet — Expo Go seul ne peut pas charger le module natif). Ensuite :
+Une fois le build terminé, télécharge et installe l'APK généré sur ton téléphone, puis :
 
 ```bash
 npx expo start --dev-client
 ```
 
-et ouvre le lien depuis l'app installée. Si le module SMS plante ou ne reçoit rien, c'est attendu au premier essai
-vu qu'il n'a jamais été testé — les points les plus probables à corriger sont documentés en commentaire dans
-`modules/sms-receiver/android/.../SmsReceiverModule.kt`.
+## État du projet
 
-Détails complets pour la suite du développement : voir [CLAUDE.md](./CLAUDE.md).
+🚧 **En maintenance et évolutif.** Le socle (comptes, transactions, budgets, épargne, objectifs, notifications,
+sécurité, sauvegarde chiffrée) est fonctionnel. Le module de réception SMS natif est en cours de validation sur
+device. La distribution via GitHub Releases n'est pas encore automatisée.
 
-## Sécurité
+## Licence
 
-Aucune donnée financière ne doit être commitée dans ce dépôt. Les sauvegardes (`*.mmbak`) et les bases SQLite
-locales sont exclues via `.gitignore`.
+MIT — voir [LICENSE](./LICENSE).
