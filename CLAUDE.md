@@ -90,9 +90,20 @@ each provider's verb map) are best-effort placeholders written without access to
 explicitly expects these to be refined once real messages are available. Don't treat their current behavior as
 authoritative.
 
-`sms_sources` (CDC §11) has no `accountId` column, so `smsListenerService.processMessage` resolves the target account
-by matching `account.provider === source.provider` and takes the first match — fine for one-account-per-provider, a
-real gap if a user has two MVola accounts. If that assumption needs to change, it changes in that one function.
+`sms_sources` (CDC §11) has no `accountId` column of its own, but `006_add_sms_source_account.ts` adds one anyway
+(nullable) so a source can be pinned to a specific account — needed once a user has two accounts of the same
+provider, since the SMS sender alone can't tell them apart. `smsListenerService.processMessage` prefers
+`source.accountId` when set, falling back to matching `account.provider === source.provider` (first match) when it's
+NULL, which is still how a fresh single-account-per-provider setup resolves. Settings > Sources SMS surfaces the
+picker only once a provider actually has more than one account.
+
+Some mobile money/bank SMS report the post-transaction balance themselves (e.g. "Nouveau solde: 150000 Ar").
+`parser.ts`'s `extractReportedBalance()` (alongside `extractAmount()`) pulls that figure when present, stored on the
+pending transaction (`transactions.reportedBalance`, migration `009_add_transaction_reported_balance.ts`).
+`transactionsRepository.confirm()` uses it to set the account balance directly to that reported value instead of
+adding the transaction's own delta — self-healing any prior drift — unless the account was corrected to a different
+one at confirm time, in which case it falls back to the normal delta. `update()`/`remove()` don't need special-casing:
+they're relative deltas against whatever the balance now is, reconciled or not.
 
 ### Encrypted backup (CDC §16, roadmap P8)
 
@@ -112,11 +123,14 @@ decision turns out to be wrong for how this app gets used, that's the one functi
 
 ### Everything else not implemented
 
-- **P9 (EAS Build / GitHub Release):** `eas.json` and `.github/workflows/build-apk.yml` are scaffolded but never
-  run — no Expo account existed when this was bootstrapped. `eas.json` has no `projectId`; running `eas init` once
-  logged in will add it to `app.config.ts`'s `extra.eas`. This is also the way to actually test
-  `modules/sms-receiver`: `eas build --profile development --platform android` compiles it in the cloud (no local
-  Android SDK needed), producing an installable Development Build APK.
+- **P9 (EAS Build / GitHub Release):** an Expo account and project now exist (`app.config.ts`'s
+  `extra.eas.projectId`), and `.github/workflows/build-apk.yml` builds the chosen `eas.json` profile
+  (development/preview/production) on EAS's servers, downloads the resulting APK, and publishes it as a GitHub
+  Release — but it's `workflow_dispatch`-only (manual trigger from the Actions tab) and still needs an `EXPO_TOKEN`
+  repo secret before it can run; as of this writing it has never actually been executed, so treat the
+  `eas build:list --json` parsing step as unverified the same way the native module below is. The `development`
+  profile is the one that actually tests `modules/sms-receiver` (a Development Build); `preview`/`production` build a
+  normal standalone APK (the native module still compiles into those too, just without the dev-client wrapper).
 - **P10 (optional cloud sync):** out of scope, not started.
 - Real device behavior (biometric prompts, Android notification delivery, actual file I/O to Drive/PC, and the new
   native SMS module) is unverified — this environment has no Android SDK/emulator. What's verified: `tsc --noEmit`,

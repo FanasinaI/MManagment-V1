@@ -1,11 +1,30 @@
-# Template only — not wired up yet. Requires an EXPO_TOKEN repo secret
-# (from an Expo account, via `eas login` + a robot/access token) and
-# `eas init` to have been run once locally to set app.config.ts's
-# extra.eas.projectId. Trigger manually until that setup is done.
+# Manually triggered from this repo's Actions tab (never runs automatically
+# on push). Requires an EXPO_TOKEN repo secret: Settings > Secrets and
+# variables > Actions > New repository secret, using a token created at
+# expo.dev > Account settings > Access tokens. The EAS project itself
+# already exists (see app.config.ts's extra.eas.projectId) — no `eas init`
+# needed here.
+#
+# Builds the chosen eas.json profile on EAS's servers, then downloads the
+# resulting APK and publishes it as a GitHub Release so there's a
+# shareable download link right on this repo instead of only on expo.dev.
 name: Build Android APK (EAS)
 
 on:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (see eas.json)'
+        required: true
+        default: preview
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -25,4 +44,24 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - run: eas build --platform android --profile production --non-interactive
+      - name: Build with EAS
+        run: eas build --platform android --profile "${{ inputs.profile }}" --non-interactive --wait
+
+      - name: Look up the build artifact URL
+        id: latest_build
+        run: |
+          URL=$(eas build:list --platform android --limit 1 --non-interactive --json | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].artifacts.buildUrl")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Download the APK
+        run: curl -L "${{ steps.latest_build.outputs.url }}" -o "mmanagment-${{ inputs.profile }}.apk"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "MManagment (${{ inputs.profile }}) — build ${{ github.run_number }}"
+          files: mmanagment-${{ inputs.profile }}.apk
+          body: |
+            Build EAS automatique — profil `${{ inputs.profile }}`.
+            Sur Android : autorise "Installer des apps inconnues" pour la source utilisée avant d'ouvrir ce .apk.
