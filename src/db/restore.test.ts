@@ -35,6 +35,7 @@ const payload: BackupPayload = {
     {
       id: 'tx-1',
       accountId: 'acc-1',
+      toAccountId: null,
       type: 'income',
       amount: 10000,
       categoryId: null,
@@ -49,7 +50,9 @@ const payload: BackupPayload = {
   budgets: [{ id: 'b-1', categoryId: 'cat-1', amount: 100000, period: 'monthly', threshold: 0.8 }],
   savings: [{ id: 's-1', name: 'Vacances', targetAmount: 500000, balance: 20000 }],
   goals: [{ id: 'g-1', name: 'Voiture', targetAmount: 2000000, currentAmount: 300000, targetDate: null }],
-  smsSources: [{ id: 'src-1', name: 'MVola', provider: 'mvola', senderPattern: 'MVola', enabled: true, parserVersion: 'v1' }],
+  smsSources: [
+    { id: 'src-1', name: 'MVola', provider: 'mvola', senderPattern: 'MVola', enabled: true, parserVersion: 'v1', autoConfirm: false },
+  ],
   alerts: [{ id: 'al-1', type: 'low_balance', threshold: 10000, enabled: true }],
 };
 

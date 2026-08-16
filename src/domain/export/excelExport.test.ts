@@ -10,6 +10,7 @@ const data: ExcelExportData = {
     {
       id: 't1',
       accountId: 'a1',
+      toAccountId: null,
       type: 'expense',
       amount: 20000,
       categoryId: 'c1',
@@ -22,6 +23,7 @@ const data: ExcelExportData = {
     {
       id: 't2',
       accountId: 'a1',
+      toAccountId: null,
       type: 'income',
       amount: 100000,
       categoryId: null,

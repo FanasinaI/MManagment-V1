@@ -18,9 +18,34 @@ export function signedAmount(transaction: Pick<TransactionAmount, 'type' | 'amou
   const magnitude = Math.abs(transaction.amount);
   if (INFLOW_TYPES.has(transaction.type)) return magnitude;
   if (OUTFLOW_TYPES.has(transaction.type)) return -magnitude;
-  // 'transfer' is applied as two legs (out of source, into destination) by
-  // the caller — a bare transfer amount here has no unambiguous sign.
+  // 'transfer' is handled separately by computeBalanceEffects (two legs) —
+  // a bare transfer amount here has no unambiguous single-account sign.
   return transaction.amount;
+}
+
+export interface BalanceEffect {
+  accountId: string;
+  delta: number;
+}
+
+/**
+ * What balance deltas a transaction causes, as a list of {accountId, delta}
+ * to apply. A transfer produces two legs (out of `accountId`, into
+ * `toAccountId`); every other type produces one, via `signedAmount`. Pass
+ * `sign: -1` to get the deltas that *reverse* the effect (e.g. on delete).
+ */
+export function computeBalanceEffects(
+  transaction: Pick<TransactionAmount, 'type' | 'amount' | 'accountId'> & { toAccountId?: string | null },
+  sign: 1 | -1 = 1
+): BalanceEffect[] {
+  if (transaction.type === 'transfer' && transaction.toAccountId) {
+    const magnitude = Math.abs(transaction.amount);
+    return [
+      { accountId: transaction.accountId, delta: -sign * magnitude },
+      { accountId: transaction.toAccountId, delta: sign * magnitude },
+    ];
+  }
+  return [{ accountId: transaction.accountId, delta: sign * signedAmount(transaction) }];
 }
 
 export function totalBalance(accounts: Pick<AccountBalance, 'balance'>[]): number {

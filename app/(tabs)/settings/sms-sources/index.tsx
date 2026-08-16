@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, Card, EmptyState, ListItem, Screen, Toggle } from '@/components/ui';
-import { useSmsSettingsStore } from '@/state/smsSettingsStore';
+import { AUTO_CONFIRM_RELIABILITY_THRESHOLD, useSmsSettingsStore } from '@/state/smsSettingsStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
 
@@ -19,8 +19,10 @@ export default function SmsSourcesScreen() {
   const permissionGranted = useSmsSettingsStore((s) => s.permissionGranted);
   const setDetectionEnabled = useSmsSettingsStore((s) => s.setDetectionEnabled);
   const sources = useSmsSettingsStore((s) => s.sources);
+  const reliabilityCounts = useSmsSettingsStore((s) => s.reliabilityCounts);
   const load = useSmsSettingsStore((s) => s.load);
   const setSourceEnabled = useSmsSettingsStore((s) => s.setSourceEnabled);
+  const setSourceAutoConfirm = useSmsSettingsStore((s) => s.setSourceAutoConfirm);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
@@ -52,20 +54,36 @@ export default function SmsSourcesScreen() {
         </Text>
       )}
 
-      <Card style={styles.card}>
-        {sources.length === 0 ? (
+      {sources.length === 0 ? (
+        <Card style={styles.card}>
           <EmptyState title="Aucune source configurée" subtitle="Ajoutez MVola, Airtel Money, Orange Money ou votre banque." />
-        ) : (
-          sources.map((source) => (
-            <ListItem
-              key={source.id}
-              title={source.name}
-              subtitle={`${PROVIDER_LABELS[source.provider] ?? source.provider} · ${source.senderPattern}`}
-              right={<Toggle value={source.enabled} onValueChange={(value) => void setSourceEnabled(source.id, value)} />}
-            />
-          ))
-        )}
-      </Card>
+        </Card>
+      ) : (
+        sources.map((source) => {
+          const reliableEnough = (reliabilityCounts[source.id] ?? 0) >= AUTO_CONFIRM_RELIABILITY_THRESHOLD;
+          return (
+            <Card key={source.id} style={styles.card}>
+              <ListItem
+                title={source.name}
+                subtitle={`${PROVIDER_LABELS[source.provider] ?? source.provider} · ${source.senderPattern}`}
+                right={<Toggle value={source.enabled} onValueChange={(value) => void setSourceEnabled(source.id, value)} />}
+              />
+              {reliableEnough ? (
+                <ListItem
+                  title="Auto-validation"
+                  subtitle="Confirmer automatiquement les transactions détectées de cette source"
+                  right={<Toggle value={source.autoConfirm} onValueChange={(value) => void setSourceAutoConfirm(source.id, value)} />}
+                />
+              ) : (
+                <Text style={styles.reliabilityHint}>
+                  Auto-validation disponible après {AUTO_CONFIRM_RELIABILITY_THRESHOLD} détections réussies
+                  ({reliabilityCounts[source.id] ?? 0}/{AUTO_CONFIRM_RELIABILITY_THRESHOLD} pour l'instant).
+                </Text>
+              )}
+            </Card>
+          );
+        })
+      )}
 
       <Button label="+ Ajouter une source" onPress={() => router.push('/settings/sms-sources/new')} style={styles.newButton} />
     </Screen>
@@ -93,6 +111,11 @@ function createStyles(colors: ThemeColors) {
       color: colors.semantic.warning,
       fontSize: typography.size.xs,
       marginBottom: spacing.lg,
+    },
+    reliabilityHint: {
+      color: colors.text.muted,
+      fontSize: typography.size.xs,
+      marginTop: spacing.sm,
     },
     newButton: {
       marginTop: spacing.lg,

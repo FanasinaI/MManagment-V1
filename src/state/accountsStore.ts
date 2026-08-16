@@ -10,6 +10,8 @@ interface AccountsState {
   loading: boolean;
   load: () => Promise<void>;
   addAccount: (input: NewAccount) => Promise<Account>;
+  updateAccount: (id: string, patch: Omit<NewAccount, 'balance'>) => Promise<void>;
+  removeAccount: (id: string) => Promise<void>;
 }
 
 export const useAccountsStore = create<AccountsState>((set, get) => ({
@@ -29,5 +31,17 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     set({ accounts: [...get().accounts, created] });
     void notificationService.sendImmediate(notificationTemplates.accountAdded(created.name));
     return created;
+  },
+
+  async updateAccount(id, patch) {
+    const { accounts } = await getRepositories();
+    await accounts.update(id, patch);
+    set({ accounts: get().accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)) });
+  },
+
+  async removeAccount(id) {
+    const { accounts } = await getRepositories();
+    await accounts.remove(id);
+    set({ accounts: get().accounts.filter((a) => a.id !== id) });
   },
 }));

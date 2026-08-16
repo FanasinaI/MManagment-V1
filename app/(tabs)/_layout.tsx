@@ -90,6 +90,7 @@ export default function TabsLayout() {
       {/* Routes reachable by navigation but not shown in the tab bar */}
       <Tabs.Screen name="accounts/index" options={{ href: null, title: 'Comptes' }} />
       <Tabs.Screen name="accounts/new" options={{ href: null, title: 'Nouveau compte' }} />
+      <Tabs.Screen name="accounts/[id]" options={{ href: null, title: 'Modifier le compte' }} />
       <Tabs.Screen name="transactions/new" options={{ href: null, title: 'Nouvelle transaction' }} />
       <Tabs.Screen name="transactions/[id]" options={{ href: null, title: 'Transaction' }} />
       <Tabs.Screen name="transactions/pending" options={{ href: null, title: 'En attente' }} />
@@ -98,7 +99,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="savings/index" options={{ href: null, title: 'Épargne' }} />
       <Tabs.Screen name="savings/new" options={{ href: null, title: 'Nouvelle poche' }} />
       <Tabs.Screen name="savings/goals-new" options={{ href: null, title: 'Nouvel objectif' }} />
+      <Tabs.Screen name="stats" options={{ href: null, title: 'Statistiques' }} />
       <Tabs.Screen name="settings/security" options={{ href: null, title: 'Sécurité' }} />
+      <Tabs.Screen name="settings/alerts" options={{ href: null, title: 'Alertes' }} />
       <Tabs.Screen name="settings/backup" options={{ href: null, title: 'Sauvegarde' }} />
       <Tabs.Screen name="settings/export" options={{ href: null, title: 'Export Excel' }} />
       <Tabs.Screen name="settings/sms-sources/index" options={{ href: null, title: 'Sources SMS' }} />

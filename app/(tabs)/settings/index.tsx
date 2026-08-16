@@ -54,6 +54,7 @@ export default function SettingsScreen() {
 
       <Card style={styles.card}>
         <ListItem title="Sécurité" subtitle="Nom d'utilisateur, code PIN, biométrie" onPress={() => router.push('/settings/security')} />
+        <ListItem title="Alertes" subtitle="Budgets, solde faible, objectifs, rappels" onPress={() => router.push('/settings/alerts')} />
         <ListItem
           title="Sources SMS"
           subtitle="Détection des transactions financières"

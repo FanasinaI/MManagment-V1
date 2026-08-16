@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { signedAmount } from '@/domain/finance/balances';
 import { getRepositories } from '@/db/repositories';
+import { alertsService } from '@/services/alerts/alertsService';
 import { notificationService } from '@/services/notifications/notificationService';
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import { formatSignedMoney } from '@/utils/money';
@@ -45,6 +46,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     set({ transactions: [created, ...get().transactions] });
     await useAccountsStore.getState().load();
     void notificationService.sendImmediate(notificationTemplates.transactionAdded(formatSignedMoney(signedAmount(created))));
+    void alertsService.evaluateAndNotify();
     return created;
   },
 
@@ -57,6 +59,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     if (confirmedTx) {
       void notificationService.sendImmediate(notificationTemplates.transactionConfirmed(formatSignedMoney(signedAmount(confirmedTx))));
     }
+    void alertsService.evaluateAndNotify();
   },
 
   async rejectPending(id) {

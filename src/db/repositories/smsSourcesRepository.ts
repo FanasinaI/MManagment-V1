@@ -10,6 +10,7 @@ interface SmsSourceRow {
   senderPattern: string;
   enabled: number;
   parserVersion: string;
+  autoConfirm: number;
 }
 
 function toSmsSource(row: SmsSourceRow): SmsSourceRecord {
@@ -20,6 +21,7 @@ function toSmsSource(row: SmsSourceRow): SmsSourceRecord {
     senderPattern: row.senderPattern,
     enabled: row.enabled === 1,
     parserVersion: row.parserVersion,
+    autoConfirm: row.autoConfirm === 1,
   };
 }
 
@@ -39,14 +41,26 @@ export function createSmsSourcesRepository(db: DbConnection) {
       const id = generateId();
       const parserVersion = 'v1';
       await db.runAsync(
-        'INSERT INTO sms_sources (id, name, senderPattern, enabled, parserVersion, provider) VALUES (?, ?, ?, ?, ?, ?);',
+        'INSERT INTO sms_sources (id, name, senderPattern, enabled, parserVersion, provider, autoConfirm) VALUES (?, ?, ?, ?, ?, ?, 0);',
         [id, input.name, input.senderPattern, input.enabled ? 1 : 0, parserVersion, input.provider]
       );
-      return { id, name: input.name, provider: input.provider, senderPattern: input.senderPattern, enabled: input.enabled, parserVersion };
+      return {
+        id,
+        name: input.name,
+        provider: input.provider,
+        senderPattern: input.senderPattern,
+        enabled: input.enabled,
+        parserVersion,
+        autoConfirm: false,
+      };
     },
 
     async setEnabled(id: string, enabled: boolean): Promise<void> {
       await db.runAsync('UPDATE sms_sources SET enabled = ? WHERE id = ?;', [enabled ? 1 : 0, id]);
+    },
+
+    async setAutoConfirm(id: string, autoConfirm: boolean): Promise<void> {
+      await db.runAsync('UPDATE sms_sources SET autoConfirm = ? WHERE id = ?;', [autoConfirm ? 1 : 0, id]);
     },
 
     async remove(id: string): Promise<void> {

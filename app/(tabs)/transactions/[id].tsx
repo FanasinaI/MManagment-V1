@@ -26,6 +26,7 @@ export default function TransactionDetailScreen() {
   const transaction = useTransactionsStore((s) => s.transactions.find((tx) => tx.id === id));
   const removeTransaction = useTransactionsStore((s) => s.remove);
   const accountName = useAccountsStore((s) => s.accounts.find((a) => a.id === transaction?.accountId)?.name);
+  const toAccountName = useAccountsStore((s) => s.accounts.find((a) => a.id === transaction?.toAccountId)?.name);
   const categoryName = useCategoriesStore((s) => s.categories.find((c) => c.id === transaction?.categoryId)?.name);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
@@ -52,8 +53,12 @@ export default function TransactionDetailScreen() {
           {formatSignedMoney(delta)}
         </Text>
         <DetailRow styles={styles} label="Type" value={TYPE_LABELS[transaction.type]} />
-        <DetailRow styles={styles} label="Compte" value={accountName ?? '—'} />
-        <DetailRow styles={styles} label="Catégorie" value={categoryName ?? '—'} />
+        <DetailRow styles={styles} label={transaction.type === 'transfer' ? 'Compte source' : 'Compte'} value={accountName ?? '—'} />
+        {transaction.type === 'transfer' ? (
+          <DetailRow styles={styles} label="Compte destination" value={toAccountName ?? '—'} />
+        ) : (
+          <DetailRow styles={styles} label="Catégorie" value={categoryName ?? '—'} />
+        )}
         <DetailRow styles={styles} label="Date" value={formatDate(new Date(transaction.occurredAt))} />
         <DetailRow styles={styles} label="Source" value={transaction.source === 'sms' ? 'SMS' : 'Manuelle'} />
         <DetailRow styles={styles} label="Statut" value={transaction.status} />

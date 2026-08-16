@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LoadingScreen } from '@/components/branding/LoadingScreen';
 import { PinGate } from '@/components/security/PinGate';
 import { getRepositories } from '@/db/repositories';
+import { alertsService } from '@/services/alerts/alertsService';
 import { notificationService } from '@/services/notifications/notificationService';
 import { appSettingsService } from '@/services/settings/appSettingsService';
 import { smsListenerService } from '@/services/sms/smsListenerService';
@@ -42,6 +43,8 @@ export default function RootLayout() {
       if (detectionEnabled && permissionGranted) {
         await smsListenerService.start();
       }
+
+      void alertsService.evaluateAndNotify();
     })();
   }, [checkStatus, hydrateTheme]);
 

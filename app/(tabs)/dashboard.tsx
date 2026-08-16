@@ -97,7 +97,12 @@ export default function DashboardScreen() {
         )}
       </Card>
 
-      <Text style={styles.sectionTitle}>Dépenses du mois</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Dépenses du mois</Text>
+        <Text style={styles.link} onPress={() => router.push('/stats')}>
+          Statistiques ›
+        </Text>
+      </View>
       <Card style={styles.expenseCard}>
         {monthlyExpenseTotal === 0 ? (
           <Text style={styles.empty}>Aucune dépense confirmée ce mois-ci.</Text>

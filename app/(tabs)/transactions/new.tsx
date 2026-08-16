@@ -27,6 +27,7 @@ export default function NewTransactionScreen() {
   const addManual = useTransactionsStore((s) => s.addManual);
 
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [toAccountId, setToAccountId] = useState<string | null>(null);
   const [type, setType] = useState<Transaction['type'] | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
@@ -41,7 +42,13 @@ export default function NewTransactionScreen() {
     void loadCategories();
   }, [loadAccounts, loadCategories]);
 
-  const canSubmit = accountId !== null && type !== null && Number.parseFloat(amount) > 0 && !submitting;
+  const isTransfer = type === 'transfer';
+  const canSubmit =
+    accountId !== null &&
+    type !== null &&
+    Number.parseFloat(amount) > 0 &&
+    (!isTransfer || (toAccountId !== null && toAccountId !== accountId)) &&
+    !submitting;
 
   async function handleCreate() {
     if (!accountId || !type) return;
@@ -49,9 +56,10 @@ export default function NewTransactionScreen() {
     try {
       await addManual({
         accountId,
+        toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
         type,
         amount: Number.parseFloat(amount.replace(',', '.')),
-        categoryId,
+        categoryId: isTransfer ? null : categoryId,
         occurredAt: occurredAt.toISOString(),
         note: note.trim() || undefined,
       });
@@ -65,13 +73,36 @@ export default function NewTransactionScreen() {
     <Screen scroll>
       <Text style={styles.heading}>Nouvelle transaction</Text>
 
-      <Text style={styles.label}>Compte</Text>
-      <ChoiceChips options={accounts.map((a) => ({ value: a.id, label: a.name }))} value={accountId} onChange={setAccountId} />
+      <Text style={styles.label}>{isTransfer ? 'Compte source' : 'Compte'}</Text>
+      <ChoiceChips
+        options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+        value={accountId}
+        onChange={(value) => {
+          setAccountId(value);
+          if (value === toAccountId) setToAccountId(null);
+        }}
+      />
 
       <Text style={styles.label}>Type</Text>
-      <ChoiceChips options={TYPE_OPTIONS} value={type} onChange={setType} />
+      <ChoiceChips
+        options={TYPE_OPTIONS}
+        value={type}
+        onChange={(value) => {
+          setType(value);
+          if (value !== 'transfer') setToAccountId(null);
+        }}
+      />
 
-      {categories.length > 0 ? (
+      {isTransfer ? (
+        <>
+          <Text style={styles.label}>Compte destination</Text>
+          <ChoiceChips
+            options={accounts.filter((a) => a.id !== accountId).map((a) => ({ value: a.id, label: a.name }))}
+            value={toAccountId}
+            onChange={setToAccountId}
+          />
+        </>
+      ) : categories.length > 0 ? (
         <>
           <Text style={styles.label}>Catégorie</Text>
           <ChoiceChips

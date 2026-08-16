@@ -47,6 +47,17 @@ export function createAccountsRepository(db: DbConnection) {
       return { id, ...input };
     },
 
+    async update(id: string, patch: { name: string; provider: Account['provider']; type: Account['type']; currency: string }): Promise<void> {
+      await db.runAsync('UPDATE accounts SET name = ?, provider = ?, type = ?, currency = ?, updatedAt = ? WHERE id = ?;', [
+        patch.name,
+        patch.provider,
+        patch.type,
+        patch.currency,
+        nowIso(),
+        id,
+      ]);
+    },
+
     async adjustBalance(id: string, delta: number): Promise<void> {
       await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [
         delta,

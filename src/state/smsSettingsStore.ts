@@ -6,15 +6,20 @@ import { smsListenerService } from '@/services/sms/smsListenerService';
 import { smsPermissionService } from '@/services/sms/smsPermissionService';
 import type { NewSmsSource, SmsSourceRecord } from '@/validation/smsSourceSchema';
 
+/** CDC §8: auto-validation is only offered once a source has this many successfully parsed messages. */
+export const AUTO_CONFIRM_RELIABILITY_THRESHOLD = 3;
+
 interface SmsSettingsState {
   detectionEnabled: boolean;
   permissionGranted: boolean;
   sources: SmsSourceRecord[];
+  reliabilityCounts: Record<string, number>;
   loading: boolean;
   load: () => Promise<void>;
   setDetectionEnabled: (value: boolean) => Promise<void>;
   addSource: (input: NewSmsSource) => Promise<SmsSourceRecord>;
   setSourceEnabled: (id: string, enabled: boolean) => Promise<void>;
+  setSourceAutoConfirm: (id: string, autoConfirm: boolean) => Promise<void>;
   removeSource: (id: string) => Promise<void>;
 }
 
@@ -22,17 +27,20 @@ export const useSmsSettingsStore = create<SmsSettingsState>((set, get) => ({
   detectionEnabled: true,
   permissionGranted: false,
   sources: [],
+  reliabilityCounts: {},
   loading: false,
 
   async load() {
     set({ loading: true });
-    const [{ smsSources }, detectionEnabled, permissionGranted] = await Promise.all([
+    const [{ smsSources, smsEvents }, detectionEnabled, permissionGranted] = await Promise.all([
       getRepositories(),
       appSettingsService.isSmsDetectionEnabled(),
       smsPermissionService.isGranted(),
     ]);
     const list = await smsSources.list();
-    set({ sources: list, detectionEnabled, permissionGranted, loading: false });
+    const counts = await Promise.all(list.map((source) => smsEvents.countSuccessfulForSource(source.id)));
+    const reliabilityCounts = Object.fromEntries(list.map((source, i) => [source.id, counts[i]]));
+    set({ sources: list, detectionEnabled, permissionGranted, reliabilityCounts, loading: false });
   },
 
   /**
@@ -64,6 +72,12 @@ export const useSmsSettingsStore = create<SmsSettingsState>((set, get) => ({
     const { smsSources } = await getRepositories();
     await smsSources.setEnabled(id, enabled);
     set({ sources: get().sources.map((s) => (s.id === id ? { ...s, enabled } : s)) });
+  },
+
+  async setSourceAutoConfirm(id, autoConfirm) {
+    const { smsSources } = await getRepositories();
+    await smsSources.setAutoConfirm(id, autoConfirm);
+    set({ sources: get().sources.map((s) => (s.id === id ? { ...s, autoConfirm } : s)) });
   },
 
   async removeSource(id) {

@@ -81,14 +81,23 @@ async function processMessage(msg: { sender: string; body: string; receivedAt: s
         return;
       }
 
-      await transactions.createPendingFromSms({
+      const created = await transactions.createPendingFromSms({
         accountId: targetAccount.id,
         type: outcome.draft.type,
         amount: outcome.draft.amount,
         occurredAt: outcome.draft.occurredAt,
         hash: outcome.hash,
       });
-      await smsEvents.log({ sourceId: outcome.sourceId, hash: outcome.hash, status: 'parsed_pending' });
+
+      // CDC §8: auto-validation is an explicit per-source preference, only
+      // ever offered in Settings once that source has proven reliable — see
+      // app/(tabs)/settings/sms-sources/index.tsx.
+      if (source?.autoConfirm) {
+        await transactions.confirm(created.id);
+        await smsEvents.log({ sourceId: outcome.sourceId, hash: outcome.hash, status: 'confirmed' });
+      } else {
+        await smsEvents.log({ sourceId: outcome.sourceId, hash: outcome.hash, status: 'parsed_pending' });
+      }
       return;
     }
   }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { getRepositories } from '@/db/repositories';
+import { alertsService } from '@/services/alerts/alertsService';
 import { notificationService } from '@/services/notifications/notificationService';
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { Goal, NewGoal } from '@/validation/goalSchema';
@@ -36,5 +37,6 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     const { goals } = await getRepositories();
     await goals.contribute(id, amount);
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)) });
+    void alertsService.evaluateAndNotify();
   },
 }));

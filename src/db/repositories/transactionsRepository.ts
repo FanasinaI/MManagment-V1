@@ -1,4 +1,4 @@
-import { signedAmount } from '@/domain/finance/balances';
+import { computeBalanceEffects } from '@/domain/finance/balances';
 import { nowIso } from '@/utils/date';
 import { generateId } from '@/utils/id';
 import type { NewManualTransaction, Transaction } from '@/validation/transactionSchema';
@@ -8,6 +8,7 @@ import type { DbConnection } from '../types';
 interface TransactionRow {
   id: string;
   accountId: string;
+  toAccountId: string | null;
   type: string;
   amount: number;
   categoryId: string | null;
@@ -22,6 +23,7 @@ function toTransaction(row: TransactionRow): Transaction {
   return {
     id: row.id,
     accountId: row.accountId,
+    toAccountId: row.toAccountId,
     type: row.type as Transaction['type'],
     amount: row.amount,
     categoryId: row.categoryId,
@@ -31,6 +33,18 @@ function toTransaction(row: TransactionRow): Transaction {
     hash: row.hash,
     note: row.note,
   };
+}
+
+/** Applies a transaction's balance effect (both legs for a transfer) via the pure computeBalanceEffects. */
+async function applyBalanceEffect(
+  db: DbConnection,
+  record: Pick<Transaction, 'type' | 'amount' | 'accountId' | 'toAccountId'>,
+  sign: 1 | -1
+): Promise<void> {
+  const now = nowIso();
+  for (const effect of computeBalanceEffects(record, sign)) {
+    await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [effect.delta, now, effect.accountId]);
+  }
 }
 
 export function createTransactionsRepository(db: DbConnection) {
@@ -53,12 +67,13 @@ export function createTransactionsRepository(db: DbConnection) {
       return row ? toTransaction(row) : null;
     },
 
-    /** Manual entry (CDC §9): confirmed immediately, balance updated atomically. */
+    /** Manual entry (CDC §9): confirmed immediately, balance updated atomically (both legs for a transfer). */
     async createManual(input: NewManualTransaction): Promise<Transaction> {
       const id = generateId();
       const record: Transaction = {
         id,
         accountId: input.accountId,
+        toAccountId: input.toAccountId ?? null,
         type: input.type,
         amount: input.amount,
         categoryId: input.categoryId ?? null,
@@ -71,11 +86,12 @@ export function createTransactionsRepository(db: DbConnection) {
 
       await db.withTransactionAsync(async () => {
         await db.runAsync(
-          `INSERT INTO transactions (id, accountId, type, amount, categoryId, source, status, occurredAt, hash, note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
           [
             record.id,
             record.accountId,
+            record.toAccountId,
             record.type,
             record.amount,
             record.categoryId,
@@ -86,17 +102,13 @@ export function createTransactionsRepository(db: DbConnection) {
             record.note,
           ]
         );
-        await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [
-          signedAmount(record),
-          nowIso(),
-          record.accountId,
-        ]);
+        await applyBalanceEffect(db, record, 1);
       });
 
       return record;
     },
 
-    /** SMS-detected draft (CDC §8): created as PENDING, no balance impact until confirmed. */
+    /** SMS-detected draft (CDC §8): created as PENDING, no balance impact until confirmed. Never a transfer — parsers don't produce that type. */
     async createPendingFromSms(input: {
       accountId: string;
       type: Transaction['type'];
@@ -109,6 +121,7 @@ export function createTransactionsRepository(db: DbConnection) {
       const record: Transaction = {
         id,
         accountId: input.accountId,
+        toAccountId: null,
         type: input.type,
         amount: input.amount,
         categoryId: input.categoryId ?? null,
@@ -119,11 +132,12 @@ export function createTransactionsRepository(db: DbConnection) {
         note: null,
       };
       await db.runAsync(
-        `INSERT INTO transactions (id, accountId, type, amount, categoryId, source, status, occurredAt, hash, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           record.id,
           record.accountId,
+          record.toAccountId,
           record.type,
           record.amount,
           record.categoryId,
@@ -150,11 +164,7 @@ export function createTransactionsRepository(db: DbConnection) {
           'UPDATE transactions SET status = ?, accountId = ?, categoryId = ?, updatedAt = ? WHERE id = ?;',
           ['confirmed', accountId, categoryId, nowIso(), id]
         );
-        await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [
-          signedAmount({ type: row.type, amount: row.amount }),
-          nowIso(),
-          accountId,
-        ]);
+        await applyBalanceEffect(db, { type: row.type as Transaction['type'], amount: row.amount, accountId, toAccountId: row.toAccountId }, 1);
       });
     },
 
@@ -162,18 +172,18 @@ export function createTransactionsRepository(db: DbConnection) {
       await db.runAsync('UPDATE transactions SET status = ?, updatedAt = ? WHERE id = ?;', ['rejected', nowIso(), id]);
     },
 
-    /** Reverses the balance impact first if the transaction was confirmed, then deletes it. */
+    /** Reverses the balance impact first if the transaction was confirmed (both legs for a transfer), then deletes it. */
     async remove(id: string): Promise<void> {
       await db.withTransactionAsync(async () => {
         const row = await db.getFirstAsync<TransactionRow>('SELECT * FROM transactions WHERE id = ?;', [id]);
         if (!row) return;
 
         if (row.status === 'confirmed') {
-          await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [
-            signedAmount({ type: row.type, amount: row.amount }),
-            nowIso(),
-            row.accountId,
-          ]);
+          await applyBalanceEffect(
+            db,
+            { type: row.type as Transaction['type'], amount: row.amount, accountId: row.accountId, toAccountId: row.toAccountId },
+            -1
+          );
         }
         await db.runAsync('DELETE FROM transactions WHERE id = ?;', [id]);
       });

@@ -1,0 +1,31 @@
+export interface TransactionListFilters {
+  query: string;
+  accountId: string | null;
+  type: string | null;
+}
+
+export const EMPTY_TRANSACTION_FILTERS: TransactionListFilters = { query: '', accountId: null, type: null };
+
+export function hasActiveFilters(filters: TransactionListFilters): boolean {
+  return filters.query.trim().length > 0 || filters.accountId !== null || filters.type !== null;
+}
+
+/**
+ * Generic so callers pass small accessor functions rather than this module
+ * needing to know the Transaction shape — keeps it reusable and trivially
+ * testable with plain fixtures.
+ */
+export function applyTransactionFilters<T>(
+  transactions: T[],
+  filters: TransactionListFilters,
+  accessors: { searchableText: (tx: T) => string; accountId: (tx: T) => string; type: (tx: T) => string }
+): T[] {
+  const query = filters.query.trim().toLowerCase();
+
+  return transactions.filter((tx) => {
+    if (filters.accountId && accessors.accountId(tx) !== filters.accountId) return false;
+    if (filters.type && accessors.type(tx) !== filters.type) return false;
+    if (query && !accessors.searchableText(tx).toLowerCase().includes(query)) return false;
+    return true;
+  });
+}

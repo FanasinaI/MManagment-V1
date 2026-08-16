@@ -42,6 +42,15 @@ export function createSmsEventsRepository(db: DbConnection) {
         limit,
       ]);
     },
+
+    /** How many messages from this source successfully parsed into a transaction — the CDC §8 "reliable rules" signal. */
+    async countSuccessfulForSource(sourceId: string): Promise<number> {
+      const row = await db.getFirstAsync<{ count: number }>(
+        "SELECT COUNT(*) as count FROM sms_events WHERE sourceId = ? AND status IN ('parsed_pending', 'confirmed');",
+        [sourceId]
+      );
+      return row?.count ?? 0;
+    },
   };
 }
 

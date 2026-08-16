@@ -35,6 +35,7 @@ export default function AccountsScreen() {
               subtitle={PROVIDER_LABELS[account.provider]}
               left={<AccountIcon provider={account.provider} />}
               right={<Text style={styles.balance}>{formatMoney(account.balance, account.currency)}</Text>}
+              onPress={() => router.push(`/accounts/${account.id}`)}
             />
           ))
         )}
