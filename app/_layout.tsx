@@ -6,6 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 
 import { PinGate } from '@/components/security/PinGate';
 import { getRepositories } from '@/db/repositories';
+import { appSettingsService } from '@/services/settings/appSettingsService';
+import { smsListenerService } from '@/services/sms/smsListenerService';
+import { smsPermissionService } from '@/services/sms/smsPermissionService';
 import { useSecurityStore } from '@/state/securityStore';
 import { colors } from '@/theme';
 
@@ -23,6 +26,16 @@ export default function RootLayout() {
       await checkStatus();
       setDbReady(true);
       await SplashScreen.hideAsync().catch(() => {});
+
+      // Resume listening silently on relaunch if the user already enabled
+      // detection and already granted the permission — does not re-prompt.
+      const [detectionEnabled, permissionGranted] = await Promise.all([
+        appSettingsService.isSmsDetectionEnabled(),
+        smsPermissionService.isGranted(),
+      ]);
+      if (detectionEnabled && permissionGranted) {
+        await smsListenerService.start();
+      }
     })();
   }, [checkStatus]);
 

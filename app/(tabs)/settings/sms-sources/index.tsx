@@ -15,6 +15,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 export default function SmsSourcesScreen() {
   const detectionEnabled = useSmsSettingsStore((s) => s.detectionEnabled);
+  const permissionGranted = useSmsSettingsStore((s) => s.permissionGranted);
   const setDetectionEnabled = useSmsSettingsStore((s) => s.setDetectionEnabled);
   const sources = useSmsSettingsStore((s) => s.sources);
   const load = useSmsSettingsStore((s) => s.load);
@@ -36,10 +37,17 @@ export default function SmsSourcesScreen() {
         />
       </Card>
 
-      <Text style={styles.hint}>
-        La réception automatique des SMS nécessite un module Android natif non disponible dans cette build de
-        développement (voir CLAUDE.md, P5). Les réglages ci-dessous préparent la configuration pour quand il sera prêt.
-      </Text>
+      {detectionEnabled && !permissionGranted ? (
+        <Text style={styles.warning}>
+          Permission SMS refusée ou non accordée — la détection ne recevra rien tant que l'accès aux SMS n'est pas
+          autorisé pour cette app dans les paramètres Android.
+        </Text>
+      ) : (
+        <Text style={styles.hint}>
+          Ajoutez ci-dessous les expéditeurs autorisés (MVola, Airtel Money, Orange Money, votre banque). Seuls les
+          SMS provenant de ces expéditeurs exacts sont analysés.
+        </Text>
+      )}
 
       <Card style={styles.card}>
         {sources.length === 0 ? (
@@ -74,6 +82,11 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.text.muted,
+    fontSize: typography.size.xs,
+    marginBottom: spacing.lg,
+  },
+  warning: {
+    color: colors.semantic.warning,
     fontSize: typography.size.xs,
     marginBottom: spacing.lg,
   },
