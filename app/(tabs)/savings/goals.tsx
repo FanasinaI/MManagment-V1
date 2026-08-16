@@ -5,12 +5,15 @@ import { StyleSheet, Text } from 'react-native';
 import { GoalCard } from '@/components/savings/GoalCard';
 import { Button, Card, EmptyState, Screen } from '@/components/ui';
 import { useGoalsStore } from '@/state/goalsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 export default function GoalsScreen() {
   const goals = useGoalsStore((s) => s.goals);
   const load = useGoalsStore((s) => s.load);
   const contribute = useGoalsStore((s) => s.contribute);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
@@ -33,15 +36,17 @@ export default function GoalsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  newButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    newButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

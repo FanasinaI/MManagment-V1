@@ -5,7 +5,8 @@ import { StyleSheet, Text } from 'react-native';
 import { Button, ChoiceChips, Screen, TextField } from '@/components/ui';
 import { PROVIDER_LABELS, PROVIDER_TO_TYPE, PROVIDERS } from '@/domain/finance/accountProvider';
 import { useAccountsStore } from '@/state/accountsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import type { Account } from '@/validation/accountSchema';
 
 const PROVIDER_OPTIONS = PROVIDERS.map((provider) => ({ value: provider, label: PROVIDER_LABELS[provider] }));
@@ -16,6 +17,8 @@ export default function NewAccountScreen() {
   const [provider, setProvider] = useState<Account['provider'] | null>(null);
   const [balance, setBalance] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   const canSubmit = name.trim().length > 0 && provider !== null && !submitting;
 
@@ -52,17 +55,19 @@ export default function NewAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    color: colors.text.secondary,
-    fontSize: typography.size.sm,
-    marginBottom: spacing.sm,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    label: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+      marginBottom: spacing.sm,
+    },
+  });
+}

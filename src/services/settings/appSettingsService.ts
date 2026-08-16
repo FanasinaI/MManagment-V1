@@ -1,8 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
 
+export type ThemeMode = 'light' | 'dark';
+
 const KEYS = {
   smsDetectionEnabled: 'mm_sms_detection_enabled',
   smsDiagnosticsEnabled: 'mm_sms_diagnostics_enabled',
+  themeMode: 'mm_theme_mode',
+  username: 'mm_username',
 } as const;
 
 async function getBool(key: string, defaultValue: boolean): Promise<boolean> {
@@ -20,4 +24,19 @@ export const appSettingsService = {
   setSmsDetectionEnabled: (value: boolean) => setBool(KEYS.smsDetectionEnabled, value),
   isSmsDiagnosticsEnabled: () => getBool(KEYS.smsDiagnosticsEnabled, false),
   setSmsDiagnosticsEnabled: (value: boolean) => setBool(KEYS.smsDiagnosticsEnabled, value),
+
+  async getThemeMode(): Promise<ThemeMode> {
+    const value = await SecureStore.getItemAsync(KEYS.themeMode);
+    return value === 'light' ? 'light' : 'dark';
+  },
+  async setThemeMode(mode: ThemeMode): Promise<void> {
+    await SecureStore.setItemAsync(KEYS.themeMode, mode);
+  },
+
+  async getUsername(): Promise<string | null> {
+    return SecureStore.getItemAsync(KEYS.username);
+  },
+  async setUsername(username: string): Promise<void> {
+    await SecureStore.setItemAsync(KEYS.username, username);
+  },
 };

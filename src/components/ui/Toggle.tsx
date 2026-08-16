@@ -1,6 +1,6 @@
 import { Switch } from 'react-native';
 
-import { colors } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
 
 interface ToggleProps {
   value: boolean;
@@ -9,6 +9,7 @@ interface ToggleProps {
 }
 
 export function Toggle({ value, onValueChange, disabled }: ToggleProps) {
+  const colors = useThemeStore((s) => s.colors);
   return (
     <Switch
       value={value}

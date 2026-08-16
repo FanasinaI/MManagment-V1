@@ -2,15 +2,19 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
+import { AccountIcon } from '@/components/dashboard/AccountIcon';
 import { Button, Card, EmptyState, ListItem, Screen } from '@/components/ui';
 import { PROVIDER_LABELS } from '@/domain/finance/accountProvider';
 import { useAccountsStore } from '@/state/accountsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import { formatMoney } from '@/utils/money';
 
 export default function AccountsScreen() {
   const accounts = useAccountsStore((s) => s.accounts);
   const load = useAccountsStore((s) => s.load);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
@@ -29,6 +33,7 @@ export default function AccountsScreen() {
               key={account.id}
               title={account.name}
               subtitle={PROVIDER_LABELS[account.provider]}
+              left={<AccountIcon provider={account.provider} />}
               right={<Text style={styles.balance}>{formatMoney(account.balance, account.currency)}</Text>}
             />
           ))
@@ -40,19 +45,21 @@ export default function AccountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  balance: {
-    color: colors.text.primary,
-    fontWeight: typography.weight.medium,
-  },
-  addButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    balance: {
+      color: colors.text.primary,
+      fontWeight: typography.weight.medium,
+    },
+    addButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

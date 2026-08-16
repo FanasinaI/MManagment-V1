@@ -4,7 +4,8 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Button, Screen, TextField } from '@/components/ui';
 import { useGoalsStore } from '@/state/goalsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 export default function NewGoalScreen() {
   const addGoal = useGoalsStore((s) => s.addGoal);
@@ -12,6 +13,8 @@ export default function NewGoalScreen() {
   const [targetAmount, setTargetAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   const canSubmit = name.trim().length > 0 && Number.parseFloat(targetAmount) > 0 && !submitting;
 
@@ -48,12 +51,14 @@ export default function NewGoalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+  });
+}

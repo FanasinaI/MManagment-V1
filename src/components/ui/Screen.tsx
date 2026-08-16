@@ -2,7 +2,8 @@ import type { PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors } from '@/theme';
 
 interface ScreenProps extends PropsWithChildren {
   scroll?: boolean;
@@ -10,6 +11,9 @@ interface ScreenProps extends PropsWithChildren {
 }
 
 export function Screen({ children, scroll = false, style }: ScreenProps) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {scroll ? (
@@ -23,16 +27,18 @@ export function Screen({ children, scroll = false, style }: ScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xxxl,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background.primary,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: spacing.lg,
+    },
+    scrollContent: {
+      paddingBottom: spacing.xxxl,
+    },
+  });
+}

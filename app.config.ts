@@ -44,6 +44,7 @@ const config: ExpoConfig = {
     ],
     'expo-local-authentication',
     'expo-sharing',
+    'expo-font',
   ],
   extra: {
     eas: {

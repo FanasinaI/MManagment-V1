@@ -6,8 +6,9 @@ import { Button, Card, EmptyState, ProgressBar, Screen } from '@/components/ui';
 import { computeBudgetProgress } from '@/domain/finance/budgetEngine';
 import { useBudgetsStore } from '@/state/budgetsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
+import { useThemeStore } from '@/state/themeStore';
 import { useTransactionsStore } from '@/state/transactionsStore';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import { formatMoney } from '@/utils/money';
 
 export default function BudgetsScreen() {
@@ -17,6 +18,8 @@ export default function BudgetsScreen() {
   const loadCategories = useCategoriesStore((s) => s.load);
   const transactions = useTransactionsStore((s) => s.transactions);
   const loadTransactions = useTransactionsStore((s) => s.load);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void loadBudgets();
@@ -68,38 +71,40 @@ export default function BudgetsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  categoryName: {
-    color: colors.text.primary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-  },
-  amountText: {
-    color: colors.text.secondary,
-    fontSize: typography.size.sm,
-  },
-  overBudget: {
-    color: colors.semantic.danger,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.medium,
-  },
-  nearThreshold: {
-    color: colors.semantic.warning,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.medium,
-  },
-  newButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    card: {
+      marginBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    categoryName: {
+      color: colors.text.primary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+    },
+    amountText: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+    },
+    overBudget: {
+      color: colors.semantic.danger,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.medium,
+    },
+    nearThreshold: {
+      color: colors.semantic.warning,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.medium,
+    },
+    newButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

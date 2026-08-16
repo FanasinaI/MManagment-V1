@@ -1,16 +1,16 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
+import { LoadingScreen } from '@/components/branding/LoadingScreen';
 import { PinGate } from '@/components/security/PinGate';
 import { getRepositories } from '@/db/repositories';
 import { appSettingsService } from '@/services/settings/appSettingsService';
 import { smsListenerService } from '@/services/sms/smsListenerService';
 import { smsPermissionService } from '@/services/sms/smsPermissionService';
 import { useSecurityStore } from '@/state/securityStore';
-import { colors } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -19,11 +19,13 @@ export default function RootLayout() {
   const checkStatus = useSecurityStore((s) => s.checkStatus);
   const hasPin = useSecurityStore((s) => s.hasPin);
   const isUnlocked = useSecurityStore((s) => s.isUnlocked);
+  const hydrateTheme = useThemeStore((s) => s.hydrate);
+  const themeHydrated = useThemeStore((s) => s.hydrated);
+  const colors = useThemeStore((s) => s.colors);
 
   useEffect(() => {
     (async () => {
-      await getRepositories();
-      await checkStatus();
+      await Promise.all([getRepositories(), checkStatus(), hydrateTheme()]);
       setDbReady(true);
       await SplashScreen.hideAsync().catch(() => {});
 
@@ -37,14 +39,10 @@ export default function RootLayout() {
         await smsListenerService.start();
       }
     })();
-  }, [checkStatus]);
+  }, [checkStatus, hydrateTheme]);
 
-  if (!dbReady) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.gold[500]} />
-      </View>
-    );
+  if (!dbReady || !themeHydrated) {
+    return <LoadingScreen />;
   }
 
   if (hasPin && !isUnlocked) {
@@ -53,7 +51,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={colors.statusBar} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background.primary },
@@ -68,12 +66,3 @@ export default function RootLayout() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.primary,
-  },
-});

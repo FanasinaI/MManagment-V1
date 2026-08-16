@@ -6,8 +6,9 @@ import { Button, Card, EmptyState, ListItem, Screen } from '@/components/ui';
 import { signedAmount } from '@/domain/finance/balances';
 import { useAccountsStore } from '@/state/accountsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
+import { useThemeStore } from '@/state/themeStore';
 import { useTransactionsStore } from '@/state/transactionsStore';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatSignedMoney } from '@/utils/money';
 
@@ -29,6 +30,8 @@ export default function TransactionsScreen() {
   const loadAccounts = useAccountsStore((s) => s.load);
   const categories = useCategoriesStore((s) => s.categories);
   const loadCategories = useCategoriesStore((s) => s.load);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void loadTransactions();
@@ -87,18 +90,20 @@ export default function TransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  pendingButton: {
-    marginBottom: spacing.lg,
-  },
-  newButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    pendingButton: {
+      marginBottom: spacing.lg,
+    },
+    newButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

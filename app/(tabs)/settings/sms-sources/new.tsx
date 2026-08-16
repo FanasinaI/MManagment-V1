@@ -5,7 +5,8 @@ import { StyleSheet, Text } from 'react-native';
 import { Button, ChoiceChips, Screen, TextField } from '@/components/ui';
 import type { SmsProvider } from '@/domain/sms/types';
 import { useSmsSettingsStore } from '@/state/smsSettingsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 const PROVIDER_OPTIONS: { value: SmsProvider; label: string }[] = [
   { value: 'mvola', label: 'MVola' },
@@ -20,6 +21,8 @@ export default function NewSmsSourceScreen() {
   const [provider, setProvider] = useState<SmsProvider | null>(null);
   const [senderPattern, setSenderPattern] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   const canSubmit = name.trim().length > 0 && provider !== null && senderPattern.trim().length > 0 && !submitting;
 
@@ -55,17 +58,19 @@ export default function NewSmsSourceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    color: colors.text.secondary,
-    fontSize: typography.size.sm,
-    marginBottom: spacing.sm,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    label: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+      marginBottom: spacing.sm,
+    },
+  });
+}

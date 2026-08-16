@@ -4,7 +4,8 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Button, Card, EmptyState, ListItem, Screen, Toggle } from '@/components/ui';
 import { useSmsSettingsStore } from '@/state/smsSettingsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 const PROVIDER_LABELS: Record<string, string> = {
   mvola: 'MVola',
@@ -20,6 +21,8 @@ export default function SmsSourcesScreen() {
   const sources = useSmsSettingsStore((s) => s.sources);
   const load = useSmsSettingsStore((s) => s.load);
   const setSourceEnabled = useSmsSettingsStore((s) => s.setSourceEnabled);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
@@ -69,28 +72,30 @@ export default function SmsSourcesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  hint: {
-    color: colors.text.muted,
-    fontSize: typography.size.xs,
-    marginBottom: spacing.lg,
-  },
-  warning: {
-    color: colors.semantic.warning,
-    fontSize: typography.size.xs,
-    marginBottom: spacing.lg,
-  },
-  newButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    card: {
+      marginBottom: spacing.md,
+    },
+    hint: {
+      color: colors.text.muted,
+      fontSize: typography.size.xs,
+      marginBottom: spacing.lg,
+    },
+    warning: {
+      color: colors.semantic.warning,
+      fontSize: typography.size.xs,
+      marginBottom: spacing.lg,
+    },
+    newButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

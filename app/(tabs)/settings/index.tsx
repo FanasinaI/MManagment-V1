@@ -2,9 +2,10 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, ListItem, Screen, TextField } from '@/components/ui';
+import { Button, Card, ListItem, Screen, TextField, Toggle } from '@/components/ui';
 import { useCategoriesStore } from '@/state/categoriesStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 export default function SettingsScreen() {
   const categories = useCategoriesStore((s) => s.categories);
@@ -12,6 +13,11 @@ export default function SettingsScreen() {
   const addCategory = useCategoriesStore((s) => s.addCategory);
   const [newCategory, setNewCategory] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const colors = useThemeStore((s) => s.colors);
+  const mode = useThemeStore((s) => s.mode);
+  const toggleTheme = useThemeStore((s) => s.toggle);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void loadCategories();
@@ -33,13 +39,22 @@ export default function SettingsScreen() {
       <Text style={styles.heading}>Paramètres</Text>
 
       <Card style={styles.card}>
-        <ListItem title="Sécurité" subtitle="Code PIN, biométrie" onPress={() => router.push('/settings/security')} />
+        <ListItem
+          title="Thème sombre"
+          subtitle={mode === 'dark' ? 'Activé' : 'Désactivé — thème clair actif'}
+          right={<Toggle value={mode === 'dark'} onValueChange={() => void toggleTheme()} />}
+        />
+      </Card>
+
+      <Card style={styles.card}>
+        <ListItem title="Sécurité" subtitle="Nom d'utilisateur, code PIN, biométrie" onPress={() => router.push('/settings/security')} />
         <ListItem
           title="Sources SMS"
           subtitle="Détection des transactions financières"
           onPress={() => router.push('/settings/sms-sources')}
         />
         <ListItem title="Sauvegarde" subtitle="Exporter / importer vos données" onPress={() => router.push('/settings/backup')} />
+        <ListItem title="Export Excel" subtitle="Exporter vos données au format .xlsx" onPress={() => router.push('/settings/export')} />
       </Card>
 
       <Text style={styles.sectionTitle}>Catégories</Text>
@@ -68,43 +83,45 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    color: colors.text.primary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-    marginBottom: spacing.md,
-  },
-  hint: {
-    color: colors.text.muted,
-    fontSize: typography.size.sm,
-  },
-  addCategoryRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  addCategoryInput: {
-    flex: 1,
-  },
-  addCategoryButton: {
-    marginTop: spacing.lg,
-  },
-  version: {
-    color: colors.text.muted,
-    fontSize: typography.size.xs,
-    textAlign: 'center',
-    marginTop: spacing.xxl,
-    marginBottom: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    card: {
+      marginBottom: spacing.lg,
+    },
+    sectionTitle: {
+      color: colors.text.primary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+      marginBottom: spacing.md,
+    },
+    hint: {
+      color: colors.text.muted,
+      fontSize: typography.size.sm,
+    },
+    addCategoryRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    addCategoryInput: {
+      flex: 1,
+    },
+    addCategoryButton: {
+      marginTop: spacing.lg,
+    },
+    version: {
+      color: colors.text.muted,
+      fontSize: typography.size.xs,
+      textAlign: 'center',
+      marginTop: spacing.xxl,
+      marginBottom: spacing.lg,
+    },
+  });
+}

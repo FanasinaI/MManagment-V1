@@ -3,8 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ListItem, Screen } from '@/components/ui';
 import { useAccountsStore } from '@/state/accountsStore';
+import { useThemeStore } from '@/state/themeStore';
 import { useTransactionsStore } from '@/state/transactionsStore';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
 
@@ -15,6 +16,8 @@ export default function PendingTransactionsScreen() {
   const rejectPending = useTransactionsStore((s) => s.rejectPending);
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void loadPending();
@@ -48,28 +51,30 @@ export default function PendingTransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    marginBottom: spacing.lg,
-  },
-  hint: {
-    color: colors.semantic.pending,
-    fontSize: typography.size.xs,
-    marginTop: spacing.sm,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    card: {
+      marginBottom: spacing.lg,
+    },
+    hint: {
+      color: colors.semantic.pending,
+      fontSize: typography.size.xs,
+      marginTop: spacing.sm,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+    },
+  });
+}

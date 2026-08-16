@@ -4,13 +4,16 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Button, Screen, TextField } from '@/components/ui';
 import { useSavingsStore } from '@/state/savingsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 export default function NewSavingsPocketScreen() {
   const addPocket = useSavingsStore((s) => s.addPocket);
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   const canSubmit = name.trim().length > 0 && !submitting;
 
@@ -43,12 +46,14 @@ export default function NewSavingsPocketScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+  });
+}

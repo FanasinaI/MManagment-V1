@@ -5,12 +5,15 @@ import { StyleSheet, Text } from 'react-native';
 import { PocketCard } from '@/components/savings/PocketCard';
 import { Button, Card, EmptyState, Screen } from '@/components/ui';
 import { useSavingsStore } from '@/state/savingsStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 
 export default function SavingsScreen() {
   const pockets = useSavingsStore((s) => s.pockets);
   const load = useSavingsStore((s) => s.load);
   const deposit = useSavingsStore((s) => s.deposit);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
@@ -37,18 +40,20 @@ export default function SavingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  goalsButton: {
-    marginBottom: spacing.lg,
-  },
-  newButton: {
-    marginTop: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    goalsButton: {
+      marginBottom: spacing.lg,
+    },
+    newButton: {
+      marginTop: spacing.lg,
+    },
+  });
+}

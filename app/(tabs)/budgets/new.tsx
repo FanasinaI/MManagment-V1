@@ -5,7 +5,8 @@ import { StyleSheet, Text } from 'react-native';
 import { Button, ChoiceChips, Screen, TextField } from '@/components/ui';
 import { useBudgetsStore } from '@/state/budgetsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
-import { colors, spacing, typography } from '@/theme';
+import { useThemeStore } from '@/state/themeStore';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import type { BudgetPeriod } from '@/utils/date';
 
 const PERIOD_OPTIONS: { value: BudgetPeriod; label: string }[] = [
@@ -24,6 +25,8 @@ export default function NewBudgetScreen() {
   const [amount, setAmount] = useState('');
   const [threshold, setThreshold] = useState('80');
   const [submitting, setSubmitting] = useState(false);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   useEffect(() => {
     void loadCategories();
@@ -75,22 +78,24 @@ export default function NewBudgetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    color: colors.text.secondary,
-    fontSize: typography.size.sm,
-    marginBottom: spacing.sm,
-  },
-  hint: {
-    color: colors.text.muted,
-    fontSize: typography.size.sm,
-    marginBottom: spacing.lg,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    label: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+      marginBottom: spacing.sm,
+    },
+    hint: {
+      color: colors.text.muted,
+      fontSize: typography.size.sm,
+      marginBottom: spacing.lg,
+    },
+  });
+}

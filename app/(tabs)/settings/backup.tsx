@@ -18,8 +18,9 @@ import { useCategoriesStore } from '@/state/categoriesStore';
 import { useGoalsStore } from '@/state/goalsStore';
 import { useSavingsStore } from '@/state/savingsStore';
 import { useSmsSettingsStore } from '@/state/smsSettingsStore';
+import { useThemeStore } from '@/state/themeStore';
 import { useTransactionsStore } from '@/state/transactionsStore';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, type ThemeColors, typography } from '@/theme';
 import type { BackupPayload } from '@/validation/backupSchema';
 
 const BACKUP_KEY_STORAGE = 'mm_backup_key_hex';
@@ -49,6 +50,8 @@ export default function BackupSettingsScreen() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<BackupPayload | null>(null);
+  const colors = useThemeStore((s) => s.colors);
+  const styles = createStyles(colors);
 
   async function handleExport() {
     setBusy(true);
@@ -159,35 +162,37 @@ export default function BackupSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    color: colors.text.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    gap: spacing.md,
-  },
-  description: {
-    color: colors.text.secondary,
-    fontSize: typography.size.sm,
-  },
-  button: {
-    marginTop: spacing.xs,
-  },
-  status: {
-    color: colors.text.primary,
-    fontSize: typography.size.sm,
-    marginTop: spacing.sm,
-  },
-  confirmBlock: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  warning: {
-    color: colors.semantic.warning,
-    fontSize: typography.size.xs,
-  },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    heading: {
+      color: colors.text.primary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    card: {
+      gap: spacing.md,
+    },
+    description: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+    },
+    button: {
+      marginTop: spacing.xs,
+    },
+    status: {
+      color: colors.text.primary,
+      fontSize: typography.size.sm,
+      marginTop: spacing.sm,
+    },
+    confirmBlock: {
+      marginTop: spacing.md,
+      gap: spacing.sm,
+    },
+    warning: {
+      color: colors.semantic.warning,
+      fontSize: typography.size.xs,
+    },
+  });
+}
