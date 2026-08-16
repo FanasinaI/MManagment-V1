@@ -7,8 +7,9 @@ import { AccountIcon } from '@/components/dashboard/AccountIcon';
 import { DonutChart } from '@/components/dashboard/DonutChart';
 import { Button, Card, ListItem, Screen } from '@/components/ui';
 import { PROVIDER_LABELS } from '@/domain/finance/accountProvider';
-import { cashflow, totalBalance } from '@/domain/finance/balances';
+import { totalBalance } from '@/domain/finance/balances';
 import { computeMonthlyExpenseByCategory } from '@/domain/finance/expenseBreakdown';
+import { computeMonthlyTrend } from '@/domain/finance/monthlyTrend';
 import { useAccountsStore } from '@/state/accountsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
 import { useSecurityStore } from '@/state/securityStore';
@@ -39,7 +40,8 @@ export default function DashboardScreen() {
   }, [loadAccounts, loadTransactions, loadPending, loadCategories]);
 
   const total = totalBalance(accounts);
-  const flow = cashflow(transactions);
+  const currentMonth = useMemo(() => computeMonthlyTrend(transactions, 1)[0] ?? { income: 0, expense: 0 }, [transactions]);
+  const monthlyNet = currentMonth.income - currentMonth.expense;
   const categoryNames = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
 
   const breakdown = useMemo(() => computeMonthlyExpenseByCategory(transactions), [transactions]);
@@ -63,8 +65,8 @@ export default function DashboardScreen() {
       <View style={styles.totalCard}>
         <Text style={styles.totalLabel}>Patrimoine total</Text>
         <Text style={styles.totalValue}>{formatMoney(total)}</Text>
-        <Text style={[styles.flowIndicator, { color: flow.net >= 0 ? darkColors.semantic.income : darkColors.semantic.expense }]}>
-          {flow.net >= 0 ? '▲' : '▼'} {formatMoney(Math.abs(flow.net))} ce mois
+        <Text style={[styles.flowIndicator, { color: monthlyNet >= 0 ? darkColors.semantic.income : darkColors.semantic.expense }]}>
+          {monthlyNet >= 0 ? '▲' : '▼'} {formatMoney(Math.abs(monthlyNet))} ce mois
         </Text>
       </View>
 
