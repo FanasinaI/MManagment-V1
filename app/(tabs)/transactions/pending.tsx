@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ListItem, Screen } from '@/components/ui';
@@ -13,11 +13,13 @@ export default function PendingTransactionsScreen() {
   const pending = useTransactionsStore((s) => s.pending);
   const loadPending = useTransactionsStore((s) => s.loadPending);
   const confirmPending = useTransactionsStore((s) => s.confirmPending);
+  const confirmAllPending = useTransactionsStore((s) => s.confirmAllPending);
   const rejectPending = useTransactionsStore((s) => s.rejectPending);
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
+  const [confirmingAll, setConfirmingAll] = useState(false);
 
   useEffect(() => {
     void loadPending();
@@ -25,6 +27,15 @@ export default function PendingTransactionsScreen() {
   }, [loadPending, loadAccounts]);
 
   const accountNames = new Map(accounts.map((a) => [a.id, a.name]));
+
+  async function handleConfirmAll() {
+    setConfirmingAll(true);
+    try {
+      await confirmAllPending();
+    } finally {
+      setConfirmingAll(false);
+    }
+  }
 
   return (
     <Screen scroll>
@@ -36,16 +47,26 @@ export default function PendingTransactionsScreen() {
           subtitle="Les transactions détectées par SMS apparaîtront ici pour confirmation."
         />
       ) : (
-        pending.map((tx) => (
-          <Card key={tx.id} style={styles.card}>
-            <ListItem title={formatMoney(tx.amount)} subtitle={`${accountNames.get(tx.accountId) ?? ''} · ${formatDate(new Date(tx.occurredAt))}`} />
-            <Text style={styles.hint}>Détecté par SMS — vérifiez avant de confirmer.</Text>
-            <View style={styles.actions}>
-              <Button label="Rejeter" variant="secondary" onPress={() => void rejectPending(tx.id)} style={styles.actionButton} />
-              <Button label="Confirmer" onPress={() => void confirmPending(tx.id)} style={styles.actionButton} />
-            </View>
-          </Card>
-        ))
+        <>
+          {pending.length > 1 ? (
+            <Button
+              label={`Tout confirmer (${pending.length})`}
+              onPress={() => void handleConfirmAll()}
+              loading={confirmingAll}
+              style={styles.confirmAllButton}
+            />
+          ) : null}
+          {pending.map((tx) => (
+            <Card key={tx.id} style={styles.card}>
+              <ListItem title={formatMoney(tx.amount)} subtitle={`${accountNames.get(tx.accountId) ?? ''} · ${formatDate(new Date(tx.occurredAt))}`} />
+              <Text style={styles.hint}>Détecté par SMS — vérifiez avant de confirmer.</Text>
+              <View style={styles.actions}>
+                <Button label="Rejeter" variant="secondary" onPress={() => void rejectPending(tx.id)} style={styles.actionButton} />
+                <Button label="Confirmer" onPress={() => void confirmPending(tx.id)} style={styles.actionButton} />
+              </View>
+            </Card>
+          ))}
+        </>
       )}
     </Screen>
   );
@@ -58,6 +79,9 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.size.xl,
       fontWeight: typography.weight.bold,
       marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    confirmAllButton: {
       marginBottom: spacing.lg,
     },
     card: {

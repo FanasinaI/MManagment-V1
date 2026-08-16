@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, ChoiceChips, ProgressBar, TextField } from '@/components/ui';
 import { computeGoalProgress } from '@/domain/finance/goalsEngine';
@@ -46,6 +46,8 @@ export function GoalCard({ goal, accounts, onContribute, onWithdraw, onEdit }: G
         await onWithdraw(value, accountId);
       }
       setAmount('');
+    } catch (error) {
+      Alert.alert('Opération impossible', error instanceof Error ? error.message : 'Une erreur est survenue.');
     } finally {
       setSubmitting(false);
     }

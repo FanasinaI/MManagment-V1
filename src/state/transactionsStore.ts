@@ -18,6 +18,7 @@ interface TransactionsState {
   loadPending: () => Promise<void>;
   addManual: (input: NewManualTransaction) => Promise<Transaction>;
   confirmPending: (id: string, corrections?: { accountId?: string; categoryId?: string | null }) => Promise<void>;
+  confirmAllPending: () => Promise<void>;
   rejectPending: (id: string) => Promise<void>;
   update: (
     id: string,
@@ -70,6 +71,21 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     await Promise.all([get().load(), useAccountsStore.getState().load()]);
     if (confirmedTx) {
       void notificationService.sendImmediate(notificationTemplates.transactionConfirmed(formatSignedMoney(signedAmount(confirmedTx))));
+    }
+    void alertsService.evaluateAndNotify();
+  },
+
+  /** Confirms every pending transaction as-is (no per-item corrections), with a single summary notification instead of one per item. */
+  async confirmAllPending() {
+    const { transactions } = await getRepositories();
+    const ids = get().pending.map((tx) => tx.id);
+    for (const id of ids) {
+      await transactions.confirm(id);
+    }
+    set({ pending: [] });
+    await Promise.all([get().load(), useAccountsStore.getState().load()]);
+    if (ids.length > 0) {
+      void notificationService.sendImmediate(notificationTemplates.transactionsBulkConfirmed(ids.length));
     }
     void alertsService.evaluateAndNotify();
   },

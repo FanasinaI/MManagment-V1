@@ -69,4 +69,12 @@ export const notificationTemplates = {
     title: 'Objectif atteint',
     body: `Félicitations, tu as atteint ton objectif "${goalName}" !`,
   }),
+  transactionsBulkConfirmed: (count: number): NotificationContent => ({
+    title: 'Transactions confirmées',
+    body: `${count} transaction${count > 1 ? 's' : ''} détectée${count > 1 ? 's' : ''} par SMS ${count > 1 ? 'ont été confirmées' : 'a été confirmée'}.`,
+  }),
+  recurringGenerated: (count: number): NotificationContent => ({
+    title: 'Transactions récurrentes',
+    body: `${count} transaction${count > 1 ? 's' : ''} récurrente${count > 1 ? 's' : ''} généré${count > 1 ? 'es' : 'e'} automatiquement.`,
+  }),
 };

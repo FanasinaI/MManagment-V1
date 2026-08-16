@@ -4,6 +4,8 @@ import { migration002AddSmsDiagnostics } from './002_add_sms_diagnostics';
 import { migration003AddTransferTarget } from './003_add_transfer_target';
 import { migration004SeedDefaultSmsSources } from './004_seed_default_sms_sources';
 import { migration005AddSmsSourceAutoConfirm } from './005_add_sms_source_autoconfirm';
+import { migration006AddAccountOrdering } from './006_add_account_ordering';
+import { migration007AddRecurringTransactions } from './007_add_recurring_transactions';
 
 /** Ordered ascending by version — the migration runner does not sort defensively. */
 export const migrations: Migration[] = [
@@ -12,4 +14,6 @@ export const migrations: Migration[] = [
   migration003AddTransferTarget,
   migration004SeedDefaultSmsSources,
   migration005AddSmsSourceAutoConfirm,
+  migration006AddAccountOrdering,
+  migration007AddRecurringTransactions,
 ];

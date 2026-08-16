@@ -47,10 +47,20 @@ export function createSavingsRepository(db: DbConnection) {
       });
     },
 
-    /** The reverse of depositFromAccount: moves money out of the pocket and back into a real account, logged the same way. */
+    /**
+     * The reverse of depositFromAccount: moves money out of the pocket and
+     * back into a real account, logged the same way. Re-checks the balance
+     * inside the transaction (not just the UI) so a stale in-memory pocket
+     * balance can never push a pocket negative — a savings pocket has no
+     * concept of overdraft.
+     */
     async withdrawToAccount(pocketId: string, accountId: string, amount: number, pocketName: string): Promise<void> {
       const now = nowIso();
       await db.withTransactionAsync(async () => {
+        const row = await db.getFirstAsync<{ balance: number }>('SELECT balance FROM savings WHERE id = ?;', [pocketId]);
+        if (!row || amount > row.balance) {
+          throw new Error("Le montant dépasse le solde de la poche d'épargne.");
+        }
         await db.runAsync('UPDATE savings SET balance = balance - ? WHERE id = ?;', [amount, pocketId]);
         await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
         await db.runAsync(

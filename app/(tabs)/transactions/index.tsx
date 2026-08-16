@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, ChoiceChips, EmptyState, ListItem, Screen, TextField } from '@/components/ui';
+import { Button, Card, ChoiceChips, DateField, EmptyState, ListItem, Screen, TextField } from '@/components/ui';
 import { signedAmount } from '@/domain/finance/balances';
 import { applyTransactionFilters, EMPTY_TRANSACTION_FILTERS, hasActiveFilters, type TransactionListFilters } from '@/domain/finance/transactionFilters';
 import { useAccountsStore } from '@/state/accountsStore';
@@ -59,6 +59,8 @@ export default function TransactionsScreen() {
           `${tx.note ?? ''} ${(tx.categoryId && categoryNames.get(tx.categoryId)) || ''} ${accountNames.get(tx.accountId) ?? ''}`,
         accountId: (tx) => tx.accountId,
         type: (tx) => tx.type,
+        occurredAt: (tx) => tx.occurredAt,
+        amount: (tx) => tx.amount,
       }),
     [confirmed, filters, categoryNames, accountNames]
   );
@@ -97,6 +99,61 @@ export default function TransactionsScreen() {
             value={filters.type}
             onChange={(type) => setFilters((f) => ({ ...f, type: f.type === type ? null : type }))}
           />
+
+          <Text style={styles.label}>Période</Text>
+          {filters.dateFrom ? (
+            <DateField
+              label="Du"
+              value={new Date(filters.dateFrom)}
+              onChange={(date) => setFilters((f) => ({ ...f, dateFrom: date.toISOString() }))}
+              maximumDate={filters.dateTo ? new Date(filters.dateTo) : new Date()}
+            />
+          ) : (
+            <Button
+              label="+ Date de début"
+              variant="secondary"
+              onPress={() => setFilters((f) => ({ ...f, dateFrom: new Date().toISOString() }))}
+              style={styles.dateToggle}
+            />
+          )}
+          {filters.dateTo ? (
+            <DateField
+              label="Au"
+              value={new Date(filters.dateTo)}
+              onChange={(date) => setFilters((f) => ({ ...f, dateTo: date.toISOString() }))}
+              minimumDate={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
+              maximumDate={new Date()}
+            />
+          ) : (
+            <Button
+              label="+ Date de fin"
+              variant="secondary"
+              onPress={() => setFilters((f) => ({ ...f, dateTo: new Date().toISOString() }))}
+              style={styles.dateToggle}
+            />
+          )}
+
+          <Text style={styles.label}>Montant</Text>
+          <View style={styles.amountRow}>
+            <View style={styles.amountInput}>
+              <TextField
+                label="Min (Ar)"
+                value={filters.amountMin !== null ? String(filters.amountMin) : ''}
+                onChangeText={(text) => setFilters((f) => ({ ...f, amountMin: text ? Number.parseFloat(text.replace(',', '.')) || null : null }))}
+                placeholder="0"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.amountInput}>
+              <TextField
+                label="Max (Ar)"
+                value={filters.amountMax !== null ? String(filters.amountMax) : ''}
+                onChangeText={(text) => setFilters((f) => ({ ...f, amountMax: text ? Number.parseFloat(text.replace(',', '.')) || null : null }))}
+                placeholder="0"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
         </>
       ) : null}
 
@@ -170,6 +227,16 @@ function createStyles(colors: ThemeColors) {
     },
     resetButton: {
       marginBottom: spacing.md,
+    },
+    dateToggle: {
+      marginBottom: spacing.lg,
+    },
+    amountRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    amountInput: {
+      flex: 1,
     },
     pendingButton: {
       marginBottom: spacing.lg,

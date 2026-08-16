@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, ChoiceChips, ProgressBar, TextField } from '@/components/ui';
 import { computeSavingsProgress } from '@/domain/finance/savingsEngine';
@@ -45,6 +45,8 @@ export function PocketCard({ pocket, accounts, onDeposit, onWithdraw, onEdit }: 
         await onWithdraw(value, accountId);
       }
       setAmount('');
+    } catch (error) {
+      Alert.alert('Opération impossible', error instanceof Error ? error.message : 'Une erreur est survenue.');
     } finally {
       setSubmitting(false);
     }

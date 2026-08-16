@@ -11,6 +11,8 @@ interface AccountsState {
   load: () => Promise<void>;
   addAccount: (input: NewAccount) => Promise<Account>;
   updateAccount: (id: string, patch: Omit<NewAccount, 'balance'>) => Promise<void>;
+  setDefaultAccount: (id: string) => Promise<void>;
+  reorderAccounts: (orderedIds: string[]) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
 }
 
@@ -37,6 +39,19 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     const { accounts } = await getRepositories();
     await accounts.update(id, patch);
     set({ accounts: get().accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)) });
+  },
+
+  async setDefaultAccount(id) {
+    const { accounts } = await getRepositories();
+    await accounts.setDefault(id);
+    set({ accounts: get().accounts.map((a) => ({ ...a, isDefault: a.id === id })) });
+  },
+
+  async reorderAccounts(orderedIds) {
+    const { accounts } = await getRepositories();
+    await accounts.reorder(orderedIds);
+    const byId = new Map(get().accounts.map((a) => [a.id, a]));
+    set({ accounts: orderedIds.map((id, index) => ({ ...byId.get(id)!, sortOrder: index })) });
   },
 
   async removeAccount(id) {

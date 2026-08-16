@@ -30,7 +30,7 @@ function createFakeDb() {
 const payload: BackupPayload = {
   version: 1,
   exportedAt: '2026-08-16T00:00:00.000Z',
-  accounts: [{ id: 'acc-1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 50000 }],
+  accounts: [{ id: 'acc-1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 50000, sortOrder: 0, isDefault: true }],
   transactions: [
     {
       id: 'tx-1',

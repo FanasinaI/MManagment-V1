@@ -39,10 +39,19 @@ export function createGoalsRepository(db: DbConnection) {
       });
     },
 
-    /** The reverse of contributeFromAccount: moves money out of the goal and back into a real account, logged the same way. */
+    /**
+     * The reverse of contributeFromAccount: moves money out of the goal and
+     * back into a real account, logged the same way. Re-checks the balance
+     * inside the transaction (not just the UI) so a stale in-memory goal
+     * amount can never push it negative.
+     */
     async withdrawToAccount(id: string, accountId: string, amount: number, goalName: string): Promise<void> {
       const now = nowIso();
       await db.withTransactionAsync(async () => {
+        const row = await db.getFirstAsync<{ currentAmount: number }>('SELECT currentAmount FROM goals WHERE id = ?;', [id]);
+        if (!row || amount > row.currentAmount) {
+          throw new Error("Le montant dépasse ce qui a été épargné pour cet objectif.");
+        }
         await db.runAsync('UPDATE goals SET currentAmount = currentAmount - ? WHERE id = ?;', [amount, id]);
         await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
         await db.runAsync(

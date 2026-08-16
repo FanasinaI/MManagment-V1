@@ -103,6 +103,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="savings/goals/[id]" options={{ href: null, title: "Modifier l'objectif" }} />
       <Tabs.Screen name="budgets/[id]" options={{ href: null, title: 'Modifier le budget' }} />
       <Tabs.Screen name="settings/categories/[id]" options={{ href: null, title: 'Modifier la catégorie' }} />
+      <Tabs.Screen name="settings/recurring/index" options={{ href: null, title: 'Transactions récurrentes' }} />
+      <Tabs.Screen name="settings/recurring/new" options={{ href: null, title: 'Nouvelle règle' }} />
+      <Tabs.Screen name="settings/recurring/[id]" options={{ href: null, title: 'Modifier la règle' }} />
       <Tabs.Screen name="stats" options={{ href: null, title: 'Statistiques' }} />
       <Tabs.Screen name="settings/security" options={{ href: null, title: 'Sécurité' }} />
       <Tabs.Screen name="settings/alerts" options={{ href: null, title: 'Alertes' }} />

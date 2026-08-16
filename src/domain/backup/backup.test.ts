@@ -4,7 +4,9 @@ import { buildBackupPayload, exportEncryptedBackup, type BackupSource } from './
 import { importEncryptedBackup, InvalidBackupError } from './importBackup';
 
 const emptySource: BackupSource = {
-  getAccounts: async () => [{ id: 'a1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 100000 }],
+  getAccounts: async () => [
+    { id: 'a1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 100000, sortOrder: 0, isDefault: true },
+  ],
   getTransactions: async () => [],
   getCategories: async () => [{ id: 'c1', name: 'Alimentation', icon: null }],
   getBudgets: async () => [],

@@ -11,6 +11,7 @@ import { notificationService } from '@/services/notifications/notificationServic
 import { appSettingsService } from '@/services/settings/appSettingsService';
 import { smsListenerService } from '@/services/sms/smsListenerService';
 import { smsPermissionService } from '@/services/sms/smsPermissionService';
+import { useRecurringStore } from '@/state/recurringStore';
 import { useSecurityStore } from '@/state/securityStore';
 import { useThemeStore } from '@/state/themeStore';
 
@@ -24,6 +25,7 @@ export default function RootLayout() {
   const hydrateTheme = useThemeStore((s) => s.hydrate);
   const themeHydrated = useThemeStore((s) => s.hydrated);
   const colors = useThemeStore((s) => s.colors);
+  const processDueRecurring = useRecurringStore((s) => s.processDue);
 
   useEffect(() => {
     (async () => {
@@ -44,9 +46,10 @@ export default function RootLayout() {
         await smsListenerService.start();
       }
 
+      await processDueRecurring();
       void alertsService.evaluateAndNotify();
     })();
-  }, [checkStatus, hydrateTheme]);
+  }, [checkStatus, hydrateTheme, processDueRecurring]);
 
   if (!dbReady || !themeHydrated) {
     return <LoadingScreen />;

@@ -1,13 +1,14 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, ChoiceChips, DateField, Screen, TextField } from '@/components/ui';
 import { useAccountsStore } from '@/state/accountsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
+import { useRecurringStore } from '@/state/recurringStore';
 import { useThemeStore } from '@/state/themeStore';
-import { useTransactionsStore } from '@/state/transactionsStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
+import type { RecurrenceFrequency } from '@/validation/recurringTransactionSchema';
 import type { Transaction } from '@/validation/transactionSchema';
 
 const TYPE_OPTIONS: { value: Transaction['type']; label: string }[] = [
@@ -19,29 +20,28 @@ const TYPE_OPTIONS: { value: Transaction['type']; label: string }[] = [
   { value: 'deposit', label: 'Dépôt' },
 ];
 
-// Types with no meaningful spending/income category — money is just moving
-// form (transfer between own accounts, deposit into an account).
+const FREQUENCY_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
+  { value: 'weekly', label: 'Chaque semaine' },
+  { value: 'monthly', label: 'Chaque mois' },
+  { value: 'yearly', label: 'Chaque année' },
+];
+
 const TYPES_WITHOUT_CATEGORY = new Set<Transaction['type']>(['transfer', 'deposit']);
 
-export default function NewTransactionScreen() {
-  const { type: presetType, id: editId } = useLocalSearchParams<{ type?: string; id?: string }>();
-  const isEditing = Boolean(editId);
-  const existing = useTransactionsStore((s) => s.transactions.find((tx) => tx.id === editId));
+export default function NewRecurringTransactionScreen() {
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const categories = useCategoriesStore((s) => s.categories);
   const loadCategories = useCategoriesStore((s) => s.load);
-  const addManual = useTransactionsStore((s) => s.addManual);
-  const updateTransaction = useTransactionsStore((s) => s.update);
+  const addRule = useRecurringStore((s) => s.addRule);
 
   const [accountId, setAccountId] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
-  const [type, setType] = useState<Transaction['type'] | null>(
-    TYPE_OPTIONS.some((o) => o.value === presetType) ? (presetType as Transaction['type']) : null
-  );
+  const [type, setType] = useState<Transaction['type'] | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
-  const [occurredAt, setOccurredAt] = useState(() => new Date());
+  const [frequency, setFrequency] = useState<RecurrenceFrequency | null>('monthly');
+  const [nextOccurrence, setNextOccurrence] = useState(() => new Date());
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const colors = useThemeStore((s) => s.colors);
@@ -52,59 +52,30 @@ export default function NewTransactionScreen() {
     void loadCategories();
   }, [loadAccounts, loadCategories]);
 
-  useEffect(() => {
-    if (existing) {
-      setAccountId(existing.accountId);
-      setToAccountId(existing.toAccountId);
-      setType(existing.type);
-      setCategoryId(existing.categoryId);
-      setAmount(String(existing.amount));
-      setOccurredAt(new Date(existing.occurredAt));
-      setNote(existing.note ?? '');
-    }
-  }, [existing]);
-
-  // Pre-select the user's default account on a fresh (non-edit) form, once accounts have loaded.
-  useEffect(() => {
-    if (!isEditing && accountId === null && accounts.length > 0) {
-      setAccountId((accounts.find((a) => a.isDefault) ?? accounts[0]).id);
-    }
-  }, [isEditing, accountId, accounts]);
-
   const isTransfer = type === 'transfer';
   const showCategory = type !== null && !TYPES_WITHOUT_CATEGORY.has(type) && categories.length > 0;
   const canSubmit =
     accountId !== null &&
     type !== null &&
+    frequency !== null &&
     Number.parseFloat(amount) > 0 &&
     (!isTransfer || (toAccountId !== null && toAccountId !== accountId)) &&
     !submitting;
 
   async function handleCreate() {
-    if (!accountId || !type) return;
+    if (!accountId || !type || !frequency) return;
     setSubmitting(true);
     try {
-      if (isEditing && editId) {
-        await updateTransaction(editId, {
-          accountId,
-          toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
-          type,
-          amount: Number.parseFloat(amount.replace(',', '.')),
-          categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
-          occurredAt: occurredAt.toISOString(),
-          note: note.trim() || undefined,
-        });
-      } else {
-        await addManual({
-          accountId,
-          toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
-          type,
-          amount: Number.parseFloat(amount.replace(',', '.')),
-          categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
-          occurredAt: occurredAt.toISOString(),
-          note: note.trim() || undefined,
-        });
-      }
+      await addRule({
+        accountId,
+        toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
+        type,
+        amount: Number.parseFloat(amount.replace(',', '.')),
+        categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
+        frequency,
+        nextOccurrence: nextOccurrence.toISOString(),
+        note: note.trim() || undefined,
+      });
       router.back();
     } finally {
       setSubmitting(false);
@@ -113,9 +84,7 @@ export default function NewTransactionScreen() {
 
   return (
     <Screen scroll>
-      <Text style={styles.heading}>
-        {isEditing ? 'Modifier la transaction' : isTransfer ? 'Transfert entre comptes' : 'Nouvelle transaction'}
-      </Text>
+      <Text style={styles.heading}>Nouvelle transaction récurrente</Text>
 
       <Text style={styles.label}>{isTransfer ? 'Compte source' : 'Compte'}</Text>
       <ChoiceChips
@@ -162,10 +131,14 @@ export default function NewTransactionScreen() {
       ) : null}
 
       <TextField label="Montant (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
-      <DateField label="Date" value={occurredAt} onChange={setOccurredAt} maximumDate={new Date()} />
-      <TextField label="Note (optionnel)" value={note} onChangeText={setNote} placeholder="Ex : Courses au marché" />
 
-      <Button label="Enregistrer" onPress={() => void handleCreate()} disabled={!canSubmit} loading={submitting} />
+      <Text style={styles.label}>Fréquence</Text>
+      <ChoiceChips options={FREQUENCY_OPTIONS} value={frequency} onChange={setFrequency} />
+
+      <DateField label="Prochaine échéance" value={nextOccurrence} onChange={setNextOccurrence} />
+      <TextField label="Note (optionnel)" value={note} onChangeText={setNote} placeholder="Ex : Loyer appartement" />
+
+      <Button label="Créer" onPress={() => void handleCreate()} disabled={!canSubmit} loading={submitting} />
     </Screen>
   );
 }

@@ -10,9 +10,11 @@ export const accountSchema = z.object({
   type: accountTypeSchema,
   currency: z.string().min(1).default('MGA'),
   balance: z.number(),
+  sortOrder: z.number().int().default(0),
+  isDefault: z.boolean().default(false),
 });
 
-export const newAccountSchema = accountSchema.omit({ id: true });
+export const newAccountSchema = accountSchema.omit({ id: true, sortOrder: true, isDefault: true });
 
 export type Account = z.infer<typeof accountSchema>;
 export type NewAccount = z.infer<typeof newAccountSchema>;

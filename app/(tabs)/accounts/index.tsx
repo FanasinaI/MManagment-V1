@@ -2,23 +2,32 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { AccountIcon } from '@/components/dashboard/AccountIcon';
-import { Button, Card, EmptyState, ListItem, Screen } from '@/components/ui';
-import { PROVIDER_LABELS } from '@/domain/finance/accountProvider';
+import { AccountRow } from '@/components/accounts/AccountRow';
+import { Button, Card, EmptyState, Screen } from '@/components/ui';
 import { useAccountsStore } from '@/state/accountsStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
-import { formatMoney } from '@/utils/money';
 
 export default function AccountsScreen() {
   const accounts = useAccountsStore((s) => s.accounts);
   const load = useAccountsStore((s) => s.load);
+  const setDefaultAccount = useAccountsStore((s) => s.setDefaultAccount);
+  const reorderAccounts = useAccountsStore((s) => s.reorderAccounts);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  function moveAccount(id: string, direction: -1 | 1) {
+    const index = accounts.findIndex((a) => a.id === id);
+    const swapIndex = index + direction;
+    if (index === -1 || swapIndex < 0 || swapIndex >= accounts.length) return;
+    const reordered = [...accounts];
+    [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
+    void reorderAccounts(reordered.map((a) => a.id));
+  }
 
   return (
     <Screen scroll>
@@ -28,14 +37,15 @@ export default function AccountsScreen() {
         {accounts.length === 0 ? (
           <EmptyState title="Aucun compte" subtitle="Ajoutez votre premier compte pour suivre vos finances." />
         ) : (
-          accounts.map((account) => (
-            <ListItem
+          accounts.map((account, index) => (
+            <AccountRow
               key={account.id}
-              title={account.name}
-              subtitle={PROVIDER_LABELS[account.provider]}
-              left={<AccountIcon provider={account.provider} />}
-              right={<Text style={styles.balance}>{formatMoney(account.balance, account.currency)}</Text>}
-              onPress={() => router.push(`/accounts/${account.id}`)}
+              account={account}
+              isFirst={index === 0}
+              isLast={index === accounts.length - 1}
+              onSetDefault={() => void setDefaultAccount(account.id)}
+              onMoveUp={() => moveAccount(account.id, -1)}
+              onMoveDown={() => moveAccount(account.id, 1)}
             />
           ))
         )}
@@ -54,10 +64,6 @@ function createStyles(colors: ThemeColors) {
       fontWeight: typography.weight.bold,
       marginTop: spacing.lg,
       marginBottom: spacing.lg,
-    },
-    balance: {
-      color: colors.text.primary,
-      fontWeight: typography.weight.medium,
     },
     addButton: {
       marginTop: spacing.lg,

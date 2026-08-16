@@ -31,14 +31,19 @@ export async function restoreDatabase(db: DbConnection, payload: BackupPayload):
     }
 
     for (const account of payload.accounts) {
-      await db.runAsync('INSERT INTO accounts (id, name, provider, type, currency, balance) VALUES (?, ?, ?, ?, ?, ?);', [
-        account.id,
-        account.name,
-        account.provider,
-        account.type,
-        account.currency,
-        account.balance,
-      ]);
+      await db.runAsync(
+        `INSERT INTO accounts (id, name, provider, type, currency, balance, sortOrder, isDefault) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          account.id,
+          account.name,
+          account.provider,
+          account.type,
+          account.currency,
+          account.balance,
+          account.sortOrder,
+          account.isDefault ? 1 : 0,
+        ]
+      );
     }
 
     for (const category of payload.categories) {

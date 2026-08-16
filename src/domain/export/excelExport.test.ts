@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildWorkbook, workbookToBytes, type ExcelExportData } from './excelExport';
 
 const data: ExcelExportData = {
-  accounts: [{ id: 'a1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 450000 }],
+  accounts: [{ id: 'a1', name: 'MVola', provider: 'mvola', type: 'mobile_money', currency: 'MGA', balance: 450000, sortOrder: 0, isDefault: true }],
   categories: [{ id: 'c1', name: 'Alimentation', icon: null }],
   transactions: [
     {
