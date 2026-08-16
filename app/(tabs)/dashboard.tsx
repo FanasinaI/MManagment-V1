@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AccountIcon } from '@/components/dashboard/AccountIcon';
 import { DonutChart } from '@/components/dashboard/DonutChart';
+import { DeltaBadge } from '@/components/stats/DeltaBadge';
 import { Button, Card, ListItem, Screen } from '@/components/ui';
 import { PROVIDER_LABELS } from '@/domain/finance/accountProvider';
 import { totalBalance } from '@/domain/finance/balances';
@@ -18,6 +19,7 @@ import { useTransactionsStore } from '@/state/transactionsStore';
 import { darkColors, spacing, type ThemeColors, typography } from '@/theme';
 import { chartColorForIndex } from '@/theme/chartPalette';
 import { formatMoney } from '@/utils/money';
+import { percentDelta } from '@/utils/percent';
 
 export default function DashboardScreen() {
   const accounts = useAccountsStore((s) => s.accounts);
@@ -40,14 +42,26 @@ export default function DashboardScreen() {
   }, [loadAccounts, loadTransactions, loadPending, loadCategories]);
 
   const total = totalBalance(accounts);
-  const currentMonth = useMemo(() => computeMonthlyTrend(transactions, 1)[0] ?? { income: 0, expense: 0 }, [transactions]);
+  const trend = useMemo(() => computeMonthlyTrend(transactions, 2), [transactions]);
+  const previousMonth = trend[0] ?? { income: 0, expense: 0 };
+  const currentMonth = trend[1] ?? { income: 0, expense: 0 };
   const monthlyNet = currentMonth.income - currentMonth.expense;
+  const previousNet = previousMonth.income - previousMonth.expense;
+  const netDelta = percentDelta(monthlyNet, previousNet);
   const categoryNames = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
 
   const breakdown = useMemo(() => computeMonthlyExpenseByCategory(transactions), [transactions]);
   const topBreakdown = breakdown.slice(0, 5);
   const monthlyExpenseTotal = breakdown.reduce((sum, entry) => sum + entry.amount, 0);
   const slices = topBreakdown.map((entry, index) => ({ value: entry.amount, color: chartColorForIndex(index) }));
+
+  const previousMonthDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1), []);
+  const previousMonthExpenseTotal = useMemo(
+    () => computeMonthlyExpenseByCategory(transactions, previousMonthDate).reduce((sum, entry) => sum + entry.amount, 0),
+    [transactions, previousMonthDate]
+  );
+  const expenseDelta = percentDelta(monthlyExpenseTotal, previousMonthExpenseTotal);
+  const netIndicatorIsUp = netDelta !== null ? netDelta >= 0 : monthlyNet >= 0;
 
   return (
     <Screen scroll>
@@ -65,8 +79,10 @@ export default function DashboardScreen() {
       <View style={styles.totalCard}>
         <Text style={styles.totalLabel}>Patrimoine total</Text>
         <Text style={styles.totalValue}>{formatMoney(total)}</Text>
-        <Text style={[styles.flowIndicator, { color: monthlyNet >= 0 ? darkColors.semantic.income : darkColors.semantic.expense }]}>
-          {monthlyNet >= 0 ? '▲' : '▼'} {formatMoney(Math.abs(monthlyNet))} ce mois
+        <Text style={[styles.flowIndicator, { color: netIndicatorIsUp ? darkColors.semantic.income : darkColors.semantic.expense }]}>
+          {netDelta !== null
+            ? `${netIndicatorIsUp ? '▲' : '▼'} ${Math.abs(Math.round(netDelta))}% vs mois dernier`
+            : `${netIndicatorIsUp ? '▲' : '▼'} ${formatMoney(Math.abs(monthlyNet))} ce mois`}
         </Text>
       </View>
 
@@ -100,7 +116,10 @@ export default function DashboardScreen() {
       </Card>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Dépenses du mois</Text>
+        <View>
+          <Text style={styles.sectionTitle}>Dépenses du mois</Text>
+          {monthlyExpenseTotal > 0 ? <DeltaBadge delta={expenseDelta} goodDirection="down" /> : null}
+        </View>
         <Text style={styles.link} onPress={() => router.push('/stats')}>
           Statistiques ›
         </Text>

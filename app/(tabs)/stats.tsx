@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DonutChart } from '@/components/dashboard/DonutChart';
 import { BarChart } from '@/components/stats/BarChart';
+import { DeltaBadge } from '@/components/stats/DeltaBadge';
 import { Card, EmptyState, ProgressBar, Screen } from '@/components/ui';
 import { totalBalance } from '@/domain/finance/balances';
 import { computeBudgetProgress } from '@/domain/finance/budgetEngine';
@@ -22,14 +22,10 @@ import { useTransactionsStore } from '@/state/transactionsStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
 import { chartColorForIndex } from '@/theme/chartPalette';
 import { formatMoney } from '@/utils/money';
+import { percentDelta } from '@/utils/percent';
 
 const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
 const TREND_MONTHS = 6;
-
-function percentDelta(current: number, previous: number): number | null {
-  if (previous === 0) return current === 0 ? 0 : null;
-  return ((current - previous) / previous) * 100;
-}
 
 export default function StatsScreen() {
   const accounts = useAccountsStore((s) => s.accounts);
@@ -110,12 +106,12 @@ export default function StatsScreen() {
         <Card style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Revenus</Text>
           <Text style={[styles.summaryValue, { color: colors.semantic.income }]}>{formatMoney(currentMonth.income)}</Text>
-          <DeltaBadge delta={incomeDelta} goodDirection="up" colors={colors} />
+          <DeltaBadge delta={incomeDelta} goodDirection="up" />
         </Card>
         <Card style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Dépenses</Text>
           <Text style={[styles.summaryValue, { color: colors.semantic.expense }]}>{formatMoney(currentMonth.expense)}</Text>
-          <DeltaBadge delta={expenseDelta} goodDirection="down" colors={colors} />
+          <DeltaBadge delta={expenseDelta} goodDirection="down" />
         </Card>
       </View>
       <Card style={styles.savingsSummaryCard}>
@@ -124,7 +120,7 @@ export default function StatsScreen() {
             <Text style={styles.summaryLabel}>Épargne (poches + objectifs)</Text>
             <Text style={[styles.summaryValue, { color: colors.gold[500] }]}>{formatMoney(savingsThisMonth.net)}</Text>
           </View>
-          <DeltaBadge delta={percentDelta(savingsThisMonth.net, savingsLastMonth.net)} goodDirection="up" colors={colors} />
+          <DeltaBadge delta={percentDelta(savingsThisMonth.net, savingsLastMonth.net)} goodDirection="up" />
         </View>
         <Text style={styles.hint}>
           {savingsRate !== null
@@ -136,8 +132,7 @@ export default function StatsScreen() {
         </Text>
       </Card>
       <Text style={styles.note}>
-        Un versement vers une poche d&apos;épargne ou un objectif n&apos;est pas une dépense — c&apos;est de l&apos;argent qui reste
-        le tien, juste mis de côté. Il est donc compté à part, jamais dans les dépenses.
+        Un versement vers une poche d&apos;épargne ou un objectif n&apos;est pas une dépense.
       </Text>
 
       {/* --- Répartition des dépenses --- */}
@@ -239,31 +234,6 @@ export default function StatsScreen() {
         Exporter le détail en Excel ›
       </Text>
     </Screen>
-  );
-}
-
-function DeltaBadge({
-  delta,
-  goodDirection,
-  colors,
-}: {
-  delta: number | null;
-  goodDirection: 'up' | 'down';
-  colors: ThemeColors;
-}) {
-  if (delta === null) return null;
-  const isFlat = Math.round(delta) === 0;
-  const isUp = delta > 0;
-  const isGood = isFlat ? true : goodDirection === 'up' ? isUp : !isUp;
-  const color = isFlat ? colors.text.muted : isGood ? colors.semantic.income : colors.semantic.expense;
-
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
-      {!isFlat ? <Ionicons name={isUp ? 'arrow-up' : 'arrow-down'} size={12} color={color} /> : null}
-      <Text style={{ color, fontSize: typography.size.xs, marginLeft: 2 }}>
-        {isFlat ? '=' : `${Math.abs(Math.round(delta))}%`} vs mois dernier
-      </Text>
-    </View>
   );
 }
 
