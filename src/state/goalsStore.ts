@@ -4,6 +4,7 @@ import { getRepositories } from '@/db/repositories';
 import { alertsService } from '@/services/alerts/alertsService';
 import { notificationService } from '@/services/notifications/notificationService';
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
+import { formatMoney } from '@/utils/money';
 import type { Goal, NewGoal } from '@/validation/goalSchema';
 
 import { useAccountsStore } from './accountsStore';
@@ -47,6 +48,12 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     await goals.contributeFromAccount(id, accountId, amount, goal?.name ?? 'Objectif');
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+    if (goal) {
+      const justReached = goal.currentAmount < goal.targetAmount && goal.currentAmount + amount >= goal.targetAmount;
+      void notificationService.sendImmediate(
+        justReached ? notificationTemplates.goalReached(goal.name) : notificationTemplates.goalContribution(goal.name, formatMoney(amount))
+      );
+    }
     void alertsService.evaluateAndNotify();
   },
 
@@ -56,6 +63,7 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     await goals.withdrawToAccount(id, accountId, amount, goal?.name ?? 'Objectif');
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount - amount } : g)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+    void notificationService.sendImmediate(notificationTemplates.goalWithdraw(goal?.name ?? 'Objectif', formatMoney(amount)));
   },
 
   async updateGoal(id, patch) {

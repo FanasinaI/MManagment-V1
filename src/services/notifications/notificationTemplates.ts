@@ -49,4 +49,24 @@ export const notificationTemplates = {
     title: 'Objectif créé',
     body: `"${goalName}" a été ajouté à tes objectifs.`,
   }),
+  savingsDeposit: (pocketName: string, amountLabel: string): NotificationContent => ({
+    title: "Versement d'épargne",
+    body: `${amountLabel} versés vers "${pocketName}".`,
+  }),
+  savingsWithdraw: (pocketName: string, amountLabel: string): NotificationContent => ({
+    title: "Retrait d'épargne",
+    body: `${amountLabel} retirés depuis "${pocketName}".`,
+  }),
+  goalContribution: (goalName: string, amountLabel: string): NotificationContent => ({
+    title: 'Contribution à un objectif',
+    body: `${amountLabel} versés vers "${goalName}".`,
+  }),
+  goalWithdraw: (goalName: string, amountLabel: string): NotificationContent => ({
+    title: "Retrait d'objectif",
+    body: `${amountLabel} retirés depuis "${goalName}".`,
+  }),
+  goalReached: (goalName: string): NotificationContent => ({
+    title: 'Objectif atteint',
+    body: `Félicitations, tu as atteint ton objectif "${goalName}" !`,
+  }),
 };

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { getRepositories } from '@/db/repositories';
 import { notificationService } from '@/services/notifications/notificationService';
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
+import { formatMoney } from '@/utils/money';
 import type { NewSavingsPocket, SavingsPocket } from '@/validation/savingsSchema';
 
 import { useAccountsStore } from './accountsStore';
@@ -46,6 +47,7 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
     await savings.depositFromAccount(id, accountId, amount, pocket?.name ?? 'Épargne');
     set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance + amount } : p)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+    void notificationService.sendImmediate(notificationTemplates.savingsDeposit(pocket?.name ?? 'Épargne', formatMoney(amount)));
   },
 
   async withdraw(id, amount, accountId) {
@@ -54,6 +56,7 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
     await savings.withdrawToAccount(id, accountId, amount, pocket?.name ?? 'Épargne');
     set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance - amount } : p)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+    void notificationService.sendImmediate(notificationTemplates.savingsWithdraw(pocket?.name ?? 'Épargne', formatMoney(amount)));
   },
 
   async updatePocket(id, patch) {
