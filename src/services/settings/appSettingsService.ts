@@ -7,6 +7,7 @@ const KEYS = {
   smsDiagnosticsEnabled: 'mm_sms_diagnostics_enabled',
   themeMode: 'mm_theme_mode',
   username: 'mm_username',
+  onboardingCompleted: 'mm_onboarding_completed',
 } as const;
 
 async function getBool(key: string, defaultValue: boolean): Promise<boolean> {
@@ -39,4 +40,7 @@ export const appSettingsService = {
   async setUsername(username: string): Promise<void> {
     await SecureStore.setItemAsync(KEYS.username, username);
   },
+
+  isOnboardingCompleted: () => getBool(KEYS.onboardingCompleted, false),
+  setOnboardingCompleted: (value: boolean) => setBool(KEYS.onboardingCompleted, value),
 };

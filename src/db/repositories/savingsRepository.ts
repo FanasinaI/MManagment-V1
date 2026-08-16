@@ -1,3 +1,4 @@
+import { nowIso } from '@/utils/date';
 import { generateId } from '@/utils/id';
 import type { NewSavingsPocket, SavingsPocket } from '@/validation/savingsSchema';
 
@@ -22,6 +23,14 @@ export function createSavingsRepository(db: DbConnection) {
     /** Positive amount = versement, negative = retrait de la poche d'épargne. */
     async adjustBalance(id: string, delta: number): Promise<void> {
       await db.runAsync('UPDATE savings SET balance = balance + ? WHERE id = ?;', [delta, id]);
+    },
+
+    /** Moves money out of a real account and into the pocket atomically — a deposit has to come from somewhere. */
+    async depositFromAccount(pocketId: string, accountId: string, amount: number): Promise<void> {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('UPDATE savings SET balance = balance + ? WHERE id = ?;', [amount, pocketId]);
+        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, nowIso(), accountId]);
+      });
     },
 
     async remove(id: string): Promise<void> {

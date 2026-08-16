@@ -6,12 +6,15 @@ import { notificationService } from '@/services/notifications/notificationServic
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { Goal, NewGoal } from '@/validation/goalSchema';
 
+import { useAccountsStore } from './accountsStore';
+
 interface GoalsState {
   goals: Goal[];
   loading: boolean;
   load: () => Promise<void>;
   addGoal: (input: NewGoal) => Promise<Goal>;
-  contribute: (id: string, amount: number) => Promise<void>;
+  /** Moves `amount` out of `accountId` and into the goal — a contribution always has a real source. */
+  contribute: (id: string, amount: number, accountId: string) => Promise<void>;
 }
 
 export const useGoalsStore = create<GoalsState>((set, get) => ({
@@ -33,10 +36,11 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     return created;
   },
 
-  async contribute(id, amount) {
+  async contribute(id, amount, accountId) {
     const { goals } = await getRepositories();
-    await goals.contribute(id, amount);
+    await goals.contributeFromAccount(id, accountId, amount);
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)) });
+    await useAccountsStore.getState().load();
     void alertsService.evaluateAndNotify();
   },
 }));

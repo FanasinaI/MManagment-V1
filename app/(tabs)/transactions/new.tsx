@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
@@ -19,7 +19,12 @@ const TYPE_OPTIONS: { value: Transaction['type']; label: string }[] = [
   { value: 'deposit', label: 'Dépôt' },
 ];
 
+// Types with no meaningful spending/income category — money is just moving
+// form (transfer between own accounts, deposit into an account).
+const TYPES_WITHOUT_CATEGORY = new Set<Transaction['type']>(['transfer', 'deposit']);
+
 export default function NewTransactionScreen() {
+  const { type: presetType } = useLocalSearchParams<{ type?: string }>();
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const categories = useCategoriesStore((s) => s.categories);
@@ -28,7 +33,9 @@ export default function NewTransactionScreen() {
 
   const [accountId, setAccountId] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
-  const [type, setType] = useState<Transaction['type'] | null>(null);
+  const [type, setType] = useState<Transaction['type'] | null>(
+    TYPE_OPTIONS.some((o) => o.value === presetType) ? (presetType as Transaction['type']) : null
+  );
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [occurredAt, setOccurredAt] = useState(() => new Date());
@@ -43,6 +50,7 @@ export default function NewTransactionScreen() {
   }, [loadAccounts, loadCategories]);
 
   const isTransfer = type === 'transfer';
+  const showCategory = type !== null && !TYPES_WITHOUT_CATEGORY.has(type) && categories.length > 0;
   const canSubmit =
     accountId !== null &&
     type !== null &&
@@ -59,7 +67,7 @@ export default function NewTransactionScreen() {
         toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
         type,
         amount: Number.parseFloat(amount.replace(',', '.')),
-        categoryId: isTransfer ? null : categoryId,
+        categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
         occurredAt: occurredAt.toISOString(),
         note: note.trim() || undefined,
       });
@@ -71,7 +79,7 @@ export default function NewTransactionScreen() {
 
   return (
     <Screen scroll>
-      <Text style={styles.heading}>Nouvelle transaction</Text>
+      <Text style={styles.heading}>{isTransfer ? 'Transfert entre comptes' : 'Nouvelle transaction'}</Text>
 
       <Text style={styles.label}>{isTransfer ? 'Compte source' : 'Compte'}</Text>
       <ChoiceChips
@@ -96,13 +104,17 @@ export default function NewTransactionScreen() {
       {isTransfer ? (
         <>
           <Text style={styles.label}>Compte destination</Text>
-          <ChoiceChips
-            options={accounts.filter((a) => a.id !== accountId).map((a) => ({ value: a.id, label: a.name }))}
-            value={toAccountId}
-            onChange={setToAccountId}
-          />
+          {accounts.length < 2 ? (
+            <Text style={styles.hint}>Il te faut au moins deux comptes pour faire un transfert.</Text>
+          ) : (
+            <ChoiceChips
+              options={accounts.filter((a) => a.id !== accountId).map((a) => ({ value: a.id, label: a.name }))}
+              value={toAccountId}
+              onChange={setToAccountId}
+            />
+          )}
         </>
-      ) : categories.length > 0 ? (
+      ) : showCategory ? (
         <>
           <Text style={styles.label}>Catégorie</Text>
           <ChoiceChips
@@ -135,6 +147,11 @@ function createStyles(colors: ThemeColors) {
       color: colors.text.secondary,
       fontSize: typography.size.sm,
       marginBottom: spacing.sm,
+    },
+    hint: {
+      color: colors.text.muted,
+      fontSize: typography.size.sm,
+      marginBottom: spacing.lg,
     },
   });
 }

@@ -3,43 +3,48 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Logo } from '@/components/branding/Logo';
-import { Button, ChoiceChips, Screen, TextField } from '@/components/ui';
-import { PROVIDER_LABELS, PROVIDER_TO_TYPE, PROVIDERS } from '@/domain/finance/accountProvider';
-import { useAccountsStore } from '@/state/accountsStore';
+import { Button, Screen, TextField } from '@/components/ui';
+import { appSettingsService } from '@/services/settings/appSettingsService';
 import { useSecurityStore } from '@/state/securityStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
-import type { Account } from '@/validation/accountSchema';
-
-const PROVIDER_OPTIONS = PROVIDERS.map((provider) => ({ value: provider, label: PROVIDER_LABELS[provider] }));
 
 export default function OnboardingScreen() {
-  const addAccount = useAccountsStore((s) => s.addAccount);
-  const setUsername = useSecurityStore((s) => s.setUsername);
-  const [username, setUsernameInput] = useState('');
-  const [name, setName] = useState('');
-  const [provider, setProvider] = useState<Account['provider'] | null>(null);
-  const [balance, setBalance] = useState('');
+  const setUsernameAction = useSecurityStore((s) => s.setUsername);
+  const setPinAction = useSecurityStore((s) => s.setPin);
+  const biometricAvailable = useSecurityStore((s) => s.biometricAvailable);
+  const unlockWithBiometrics = useSecurityStore((s) => s.unlockWithBiometrics);
+
+  const [username, setUsername] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [biometricStatus, setBiometricStatus] = useState<'idle' | 'ok' | 'failed'>('idle');
   const [submitting, setSubmitting] = useState(false);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
-  const canSubmit = name.trim().length > 0 && provider !== null && !submitting;
+  const canSubmit = username.trim().length > 0 && pin.length >= 4 && confirmPin.length >= 4 && !submitting;
 
-  async function handleCreate() {
-    if (!provider) return;
+  async function handleTestBiometric() {
+    const ok = await unlockWithBiometrics();
+    setBiometricStatus(ok ? 'ok' : 'failed');
+  }
+
+  async function handleFinish() {
+    if (pin !== confirmPin) {
+      setError('Les deux codes ne correspondent pas');
+      return;
+    }
+    if (pin.length < 4) {
+      setError('Le code PIN doit contenir au moins 4 chiffres');
+      return;
+    }
     setSubmitting(true);
     try {
-      if (username.trim()) {
-        await setUsername(username.trim());
-      }
-      await addAccount({
-        name: name.trim(),
-        provider,
-        type: PROVIDER_TO_TYPE[provider],
-        currency: 'MGA',
-        balance: Number.parseFloat(balance.replace(',', '.')) || 0,
-      });
+      await setUsernameAction(username.trim());
+      await setPinAction(pin);
+      await appSettingsService.setOnboardingCompleted(true);
       router.replace('/(tabs)/dashboard');
     } finally {
       setSubmitting(false);
@@ -52,24 +57,41 @@ export default function OnboardingScreen() {
         <Logo size={72} />
       </View>
       <Text style={styles.title}>Bienvenue sur MManagment</Text>
-      <Text style={styles.subtitle}>Configure ton profil et ton premier compte pour commencer.</Text>
+      <Text style={styles.subtitle}>Choisis un nom d'utilisateur et un code PIN pour protéger tes données.</Text>
 
-      <TextField label="Ton nom d'utilisateur (optionnel)" value={username} onChangeText={setUsernameInput} placeholder="Ex : Mirado" />
-
-      <TextField label="Nom du compte" value={name} onChangeText={setName} placeholder="Ex : MVola principal" />
-
-      <Text style={styles.label}>Type de compte</Text>
-      <ChoiceChips options={PROVIDER_OPTIONS} value={provider} onChange={setProvider} />
+      <TextField label="Nom d'utilisateur" value={username} onChangeText={setUsername} placeholder="Ex : Mirado" autoCapitalize="words" />
 
       <TextField
-        label="Solde initial (Ar)"
-        value={balance}
-        onChangeText={setBalance}
-        placeholder="0"
-        keyboardType="numeric"
+        label="Code PIN"
+        value={pin}
+        onChangeText={(v) => {
+          setError(undefined);
+          setPin(v);
+        }}
+        secureTextEntry
+        keyboardType="number-pad"
+      />
+      <TextField
+        label="Confirmer le code PIN"
+        value={confirmPin}
+        onChangeText={(v) => {
+          setError(undefined);
+          setConfirmPin(v);
+        }}
+        secureTextEntry
+        keyboardType="number-pad"
+        error={error}
       />
 
-      <Button label="Créer mon premier compte" onPress={() => void handleCreate()} disabled={!canSubmit} loading={submitting} />
+      {biometricAvailable ? (
+        <View style={styles.biometricBlock}>
+          <Button label="Tester la biométrie" variant="secondary" onPress={() => void handleTestBiometric()} />
+          {biometricStatus === 'ok' ? <Text style={styles.biometricOk}>Biométrie reconnue ✓</Text> : null}
+          {biometricStatus === 'failed' ? <Text style={styles.biometricFailed}>Non reconnue — le code PIN restera disponible.</Text> : null}
+        </View>
+      ) : null}
+
+      <Button label="Terminer" onPress={() => void handleFinish()} disabled={!canSubmit} loading={submitting} style={styles.finishButton} />
     </Screen>
   );
 }
@@ -94,10 +116,22 @@ function createStyles(colors: ThemeColors) {
       textAlign: 'center',
       marginBottom: spacing.xl,
     },
-    label: {
-      color: colors.text.secondary,
+    biometricBlock: {
+      marginBottom: spacing.lg,
+      gap: spacing.sm,
+    },
+    biometricOk: {
+      color: colors.semantic.income,
       fontSize: typography.size.sm,
-      marginBottom: spacing.sm,
+      textAlign: 'center',
+    },
+    biometricFailed: {
+      color: colors.text.muted,
+      fontSize: typography.size.sm,
+      textAlign: 'center',
+    },
+    finishButton: {
+      marginTop: spacing.md,
     },
   });
 }

@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, ProgressBar, TextField } from '@/components/ui';
+import { Button, Card, ChoiceChips, ProgressBar, TextField } from '@/components/ui';
 import { computeGoalProgress } from '@/domain/finance/goalsEngine';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
 import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
+import type { Account } from '@/validation/accountSchema';
 import type { Goal } from '@/validation/goalSchema';
 
 interface GoalCardProps {
   goal: Goal;
-  onContribute: (amount: number) => Promise<void>;
+  accounts: Account[];
+  onContribute: (amount: number, accountId: string) => Promise<void>;
 }
 
-export function GoalCard({ goal, onContribute }: GoalCardProps) {
+export function GoalCard({ goal, accounts, onContribute }: GoalCardProps) {
   const [amount, setAmount] = useState('');
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const progress = computeGoalProgress(goal);
   const colors = useThemeStore((s) => s.colors);
@@ -23,10 +26,10 @@ export function GoalCard({ goal, onContribute }: GoalCardProps) {
 
   async function handleContribute() {
     const value = Number.parseFloat(amount.replace(',', '.'));
-    if (!value || value <= 0) return;
+    if (!value || value <= 0 || !accountId) return;
     setSubmitting(true);
     try {
-      await onContribute(value);
+      await onContribute(value, accountId);
       setAmount('');
     } finally {
       setSubmitting(false);
@@ -41,18 +44,27 @@ export function GoalCard({ goal, onContribute }: GoalCardProps) {
         {formatMoney(goal.currentAmount)} / {formatMoney(goal.targetAmount)}
       </Text>
       {goal.targetDate ? <Text style={styles.dateText}>Échéance : {formatDate(new Date(goal.targetDate))}</Text> : null}
-      <View style={styles.contributeRow}>
-        <View style={styles.contributeInput}>
-          <TextField label="Contribution (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
-        </View>
-        <Button
-          label="Ajouter"
-          onPress={() => void handleContribute()}
-          loading={submitting}
-          disabled={!amount}
-          style={styles.contributeButton}
-        />
-      </View>
+
+      {accounts.length === 0 ? (
+        <Text style={styles.hint}>Ajoute un compte avant de pouvoir contribuer à cet objectif.</Text>
+      ) : (
+        <>
+          <Text style={styles.label}>Depuis quel compte ?</Text>
+          <ChoiceChips options={accounts.map((a) => ({ value: a.id, label: a.name }))} value={accountId} onChange={setAccountId} />
+          <View style={styles.contributeRow}>
+            <View style={styles.contributeInput}>
+              <TextField label="Contribution (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
+            </View>
+            <Button
+              label="Ajouter"
+              onPress={() => void handleContribute()}
+              loading={submitting}
+              disabled={!amount || !accountId}
+              style={styles.contributeButton}
+            />
+          </View>
+        </>
+      )}
     </Card>
   );
 }
@@ -76,11 +88,19 @@ function createStyles(colors: ThemeColors) {
       color: colors.text.muted,
       fontSize: typography.size.xs,
     },
+    label: {
+      color: colors.text.secondary,
+      fontSize: typography.size.sm,
+      marginTop: spacing.sm,
+    },
+    hint: {
+      color: colors.text.muted,
+      fontSize: typography.size.xs,
+    },
     contributeRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      marginTop: spacing.sm,
     },
     contributeInput: {
       flex: 1,

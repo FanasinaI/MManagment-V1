@@ -8,12 +8,21 @@ import { spacing, type ThemeColors, typography } from '@/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const ACTIONS: { label: string; subtitle: string; icon: IconName; href: string }[] = [
-  { label: 'Transaction', subtitle: 'Revenu, dépense, transfert…', icon: 'swap-horizontal', href: '/transactions/new' },
-  { label: 'Compte', subtitle: 'MVola, banque, espèces…', icon: 'wallet', href: '/accounts/new' },
-  { label: 'Objectif', subtitle: 'Fixer un montant cible', icon: 'flag', href: '/savings/goals-new' },
-  { label: "Poche d'épargne", subtitle: 'Mettre de l’argent de côté', icon: 'save', href: '/savings/new' },
-  { label: 'Budget', subtitle: 'Limiter une catégorie', icon: 'pie-chart', href: '/budgets/new' },
+interface QuickAction {
+  label: string;
+  subtitle: string;
+  icon: IconName;
+  pathname: string;
+  params?: Record<string, string>;
+}
+
+const ACTIONS: QuickAction[] = [
+  { label: 'Transaction', subtitle: 'Revenu, dépense, frais…', icon: 'card', pathname: '/transactions/new' },
+  { label: 'Transfert entre comptes', subtitle: 'Déplacer de l’argent d’un compte à un autre', icon: 'swap-horizontal', pathname: '/transactions/new', params: { type: 'transfer' } },
+  { label: 'Compte', subtitle: 'MVola, banque, espèces…', icon: 'wallet', pathname: '/accounts/new' },
+  { label: 'Objectif', subtitle: 'Fixer un montant cible', icon: 'flag', pathname: '/savings/goals-new' },
+  { label: "Poche d'épargne", subtitle: 'Mettre de l’argent de côté', icon: 'save', pathname: '/savings/new' },
+  { label: 'Budget', subtitle: 'Limiter une catégorie', icon: 'pie-chart', pathname: '/budgets/new' },
 ];
 
 export default function QuickAddScreen() {
@@ -25,7 +34,7 @@ export default function QuickAddScreen() {
       <Text style={styles.heading}>Ajouter</Text>
       {ACTIONS.map((action) => (
         <Card key={action.label} style={styles.card}>
-          <Pressable style={styles.row} onPress={() => router.push(action.href)}>
+          <Pressable style={styles.row} onPress={() => router.push({ pathname: action.pathname, params: action.params })}>
             <View style={styles.iconWrap}>
               <Ionicons name={action.icon} size={22} color={colors.gold[500]} />
             </View>

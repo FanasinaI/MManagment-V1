@@ -5,12 +5,15 @@ import { notificationService } from '@/services/notifications/notificationServic
 import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { NewSavingsPocket, SavingsPocket } from '@/validation/savingsSchema';
 
+import { useAccountsStore } from './accountsStore';
+
 interface SavingsState {
   pockets: SavingsPocket[];
   loading: boolean;
   load: () => Promise<void>;
   addPocket: (input: NewSavingsPocket) => Promise<SavingsPocket>;
-  deposit: (id: string, amount: number) => Promise<void>;
+  /** Moves `amount` out of `accountId` and into the pocket — a deposit always has a real source. */
+  deposit: (id: string, amount: number, accountId: string) => Promise<void>;
 }
 
 export const useSavingsStore = create<SavingsState>((set, get) => ({
@@ -32,9 +35,10 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
     return created;
   },
 
-  async deposit(id, amount) {
+  async deposit(id, amount, accountId) {
     const { savings } = await getRepositories();
-    await savings.adjustBalance(id, amount);
+    await savings.depositFromAccount(id, accountId, amount);
     set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance + amount } : p)) });
+    await useAccountsStore.getState().load();
   },
 }));

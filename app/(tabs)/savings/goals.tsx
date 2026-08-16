@@ -4,6 +4,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { GoalCard } from '@/components/savings/GoalCard';
 import { Button, Card, EmptyState, Screen } from '@/components/ui';
+import { useAccountsStore } from '@/state/accountsStore';
 import { useGoalsStore } from '@/state/goalsStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
@@ -12,12 +13,15 @@ export default function GoalsScreen() {
   const goals = useGoalsStore((s) => s.goals);
   const load = useGoalsStore((s) => s.load);
   const contribute = useGoalsStore((s) => s.contribute);
+  const accounts = useAccountsStore((s) => s.accounts);
+  const loadAccounts = useAccountsStore((s) => s.load);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadAccounts();
+  }, [load, loadAccounts]);
 
   return (
     <Screen scroll>
@@ -28,7 +32,14 @@ export default function GoalsScreen() {
           <EmptyState title="Aucun objectif" subtitle="Fixez un montant cible et une date pour rester motivé." />
         </Card>
       ) : (
-        goals.map((goal) => <GoalCard key={goal.id} goal={goal} onContribute={(amount) => contribute(goal.id, amount)} />)
+        goals.map((goal) => (
+          <GoalCard
+            key={goal.id}
+            goal={goal}
+            accounts={accounts}
+            onContribute={(amount, accountId) => contribute(goal.id, amount, accountId)}
+          />
+        ))
       )}
 
       <Button label="Nouvel objectif" onPress={() => router.push('/savings/goals-new')} style={styles.newButton} />

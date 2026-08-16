@@ -1,3 +1,4 @@
+import { nowIso } from '@/utils/date';
 import { generateId } from '@/utils/id';
 import type { Goal, NewGoal } from '@/validation/goalSchema';
 
@@ -20,8 +21,12 @@ export function createGoalsRepository(db: DbConnection) {
       return { id, name: input.name, targetAmount: input.targetAmount, currentAmount: 0, targetDate: input.targetDate ?? null };
     },
 
-    async contribute(id: string, amount: number): Promise<void> {
-      await db.runAsync('UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ?;', [amount, id]);
+    /** Moves money out of a real account and into the goal atomically — same "where does it come from" fix as savings pockets. */
+    async contributeFromAccount(id: string, accountId: string, amount: number): Promise<void> {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ?;', [amount, id]);
+        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, nowIso(), accountId]);
+      });
     },
 
     async remove(id: string): Promise<void> {
