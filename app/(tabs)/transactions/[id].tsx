@@ -65,6 +65,7 @@ export default function TransactionDetailScreen() {
         {transaction.note ? <DetailRow styles={styles} label="Note" value={transaction.note} /> : null}
       </Card>
 
+      <Button label="Modifier" variant="secondary" onPress={() => router.push(`/transactions/new?id=${transaction.id}`)} style={styles.editButton} />
       <Button label="Supprimer" variant="danger" onPress={() => void handleDelete()} style={styles.deleteButton} />
     </Screen>
   );
@@ -106,8 +107,11 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.size.sm,
       fontWeight: typography.weight.medium,
     },
-    deleteButton: {
+    editButton: {
       marginTop: spacing.xl,
+    },
+    deleteButton: {
+      marginTop: spacing.md,
     },
     notFound: {
       color: colors.text.muted,

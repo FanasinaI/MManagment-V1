@@ -47,6 +47,24 @@ export function createSavingsRepository(db: DbConnection) {
       });
     },
 
+    /** The reverse of depositFromAccount: moves money out of the pocket and back into a real account, logged the same way. */
+    async withdrawToAccount(pocketId: string, accountId: string, amount: number, pocketName: string): Promise<void> {
+      const now = nowIso();
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('UPDATE savings SET balance = balance - ? WHERE id = ?;', [amount, pocketId]);
+        await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
+        await db.runAsync(
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+           VALUES (?, ?, NULL, 'transfer', ?, NULL, 'manual', 'confirmed', ?, NULL, ?);`,
+          [generateId(), accountId, amount, now, `Retrait depuis l'épargne « ${pocketName} »`]
+        );
+      });
+    },
+
+    async update(id: string, patch: { name: string; targetAmount: number | null }): Promise<void> {
+      await db.runAsync('UPDATE savings SET name = ?, targetAmount = ? WHERE id = ?;', [patch.name, patch.targetAmount, id]);
+    },
+
     async remove(id: string): Promise<void> {
       await db.runAsync('DELETE FROM savings WHERE id = ?;', [id]);
     },

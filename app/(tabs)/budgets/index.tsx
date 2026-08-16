@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { Button, Card, EmptyState, ProgressBar, Screen } from '@/components/ui';
 import { computeBudgetProgress } from '@/domain/finance/budgetEngine';
@@ -50,18 +50,20 @@ export default function BudgetsScreen() {
             }))
           );
           return (
-            <Card key={budget.id} style={styles.card}>
-              <Text style={styles.categoryName}>{categoryNames.get(budget.categoryId) ?? 'Catégorie'}</Text>
-              <ProgressBar ratio={progress.ratio} color={progress.isNearThreshold ? colors.semantic.warning : colors.gold[500]} />
-              <Text style={styles.amountText}>
-                {formatMoney(progress.spent)} / {formatMoney(progress.amount)}
-              </Text>
-              {progress.isOverBudget ? (
-                <Text style={styles.overBudget}>Budget dépassé</Text>
-              ) : progress.isNearThreshold ? (
-                <Text style={styles.nearThreshold}>Proche du seuil</Text>
-              ) : null}
-            </Card>
+            <Pressable key={budget.id} onPress={() => router.push(`/budgets/${budget.id}`)}>
+              <Card style={styles.card}>
+                <Text style={styles.categoryName}>{categoryNames.get(budget.categoryId) ?? 'Catégorie'}</Text>
+                <ProgressBar ratio={progress.ratio} color={progress.isNearThreshold ? colors.semantic.warning : colors.gold[500]} />
+                <Text style={styles.amountText}>
+                  {formatMoney(progress.spent)} / {formatMoney(progress.amount)}
+                </Text>
+                {progress.isOverBudget ? (
+                  <Text style={styles.overBudget}>Budget dépassé</Text>
+                ) : progress.isNearThreshold ? (
+                  <Text style={styles.nearThreshold}>Proche du seuil</Text>
+                ) : null}
+              </Card>
+            </Pressable>
           );
         })
       )}

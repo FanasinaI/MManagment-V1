@@ -13,6 +13,7 @@ export default function GoalsScreen() {
   const goals = useGoalsStore((s) => s.goals);
   const load = useGoalsStore((s) => s.load);
   const contribute = useGoalsStore((s) => s.contribute);
+  const withdraw = useGoalsStore((s) => s.withdraw);
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const colors = useThemeStore((s) => s.colors);
@@ -38,11 +39,13 @@ export default function GoalsScreen() {
             goal={goal}
             accounts={accounts}
             onContribute={(amount, accountId) => contribute(goal.id, amount, accountId)}
+            onWithdraw={(amount, accountId) => withdraw(goal.id, amount, accountId)}
+            onEdit={() => router.push(`/savings/goals/${goal.id}`)}
           />
         ))
       )}
 
-      <Button label="Nouvel objectif" onPress={() => router.push('/savings/goals-new')} style={styles.newButton} />
+      <Button label="Nouvel objectif" onPress={() => router.push('/savings/goals/new')} style={styles.newButton} />
     </Screen>
   );
 }

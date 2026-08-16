@@ -21,6 +21,16 @@ export function createBudgetsRepository(db: DbConnection) {
       return { id, ...input };
     },
 
+    async update(id: string, patch: { categoryId: string; amount: number; period: Budget['period']; threshold: number }): Promise<void> {
+      await db.runAsync('UPDATE budgets SET categoryId = ?, amount = ?, period = ?, threshold = ? WHERE id = ?;', [
+        patch.categoryId,
+        patch.amount,
+        patch.period,
+        patch.threshold,
+        id,
+      ]);
+    },
+
     async remove(id: string): Promise<void> {
       await db.runAsync('DELETE FROM budgets WHERE id = ?;', [id]);
     },

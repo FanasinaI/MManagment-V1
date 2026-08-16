@@ -24,12 +24,15 @@ const TYPE_OPTIONS: { value: Transaction['type']; label: string }[] = [
 const TYPES_WITHOUT_CATEGORY = new Set<Transaction['type']>(['transfer', 'deposit']);
 
 export default function NewTransactionScreen() {
-  const { type: presetType } = useLocalSearchParams<{ type?: string }>();
+  const { type: presetType, id: editId } = useLocalSearchParams<{ type?: string; id?: string }>();
+  const isEditing = Boolean(editId);
+  const existing = useTransactionsStore((s) => s.transactions.find((tx) => tx.id === editId));
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const categories = useCategoriesStore((s) => s.categories);
   const loadCategories = useCategoriesStore((s) => s.load);
   const addManual = useTransactionsStore((s) => s.addManual);
+  const updateTransaction = useTransactionsStore((s) => s.update);
 
   const [accountId, setAccountId] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
@@ -49,6 +52,18 @@ export default function NewTransactionScreen() {
     void loadCategories();
   }, [loadAccounts, loadCategories]);
 
+  useEffect(() => {
+    if (existing) {
+      setAccountId(existing.accountId);
+      setToAccountId(existing.toAccountId);
+      setType(existing.type);
+      setCategoryId(existing.categoryId);
+      setAmount(String(existing.amount));
+      setOccurredAt(new Date(existing.occurredAt));
+      setNote(existing.note ?? '');
+    }
+  }, [existing]);
+
   const isTransfer = type === 'transfer';
   const showCategory = type !== null && !TYPES_WITHOUT_CATEGORY.has(type) && categories.length > 0;
   const canSubmit =
@@ -62,15 +77,27 @@ export default function NewTransactionScreen() {
     if (!accountId || !type) return;
     setSubmitting(true);
     try {
-      await addManual({
-        accountId,
-        toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
-        type,
-        amount: Number.parseFloat(amount.replace(',', '.')),
-        categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
-        occurredAt: occurredAt.toISOString(),
-        note: note.trim() || undefined,
-      });
+      if (isEditing && editId) {
+        await updateTransaction(editId, {
+          accountId,
+          toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
+          type,
+          amount: Number.parseFloat(amount.replace(',', '.')),
+          categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
+          occurredAt: occurredAt.toISOString(),
+          note: note.trim() || undefined,
+        });
+      } else {
+        await addManual({
+          accountId,
+          toAccountId: isTransfer && toAccountId ? toAccountId : undefined,
+          type,
+          amount: Number.parseFloat(amount.replace(',', '.')),
+          categoryId: TYPES_WITHOUT_CATEGORY.has(type) ? null : categoryId,
+          occurredAt: occurredAt.toISOString(),
+          note: note.trim() || undefined,
+        });
+      }
       router.back();
     } finally {
       setSubmitting(false);
@@ -79,7 +106,9 @@ export default function NewTransactionScreen() {
 
   return (
     <Screen scroll>
-      <Text style={styles.heading}>{isTransfer ? 'Transfert entre comptes' : 'Nouvelle transaction'}</Text>
+      <Text style={styles.heading}>
+        {isEditing ? 'Modifier la transaction' : isTransfer ? 'Transfert entre comptes' : 'Nouvelle transaction'}
+      </Text>
 
       <Text style={styles.label}>{isTransfer ? 'Compte source' : 'Compte'}</Text>
       <ChoiceChips

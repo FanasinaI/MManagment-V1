@@ -19,6 +19,18 @@ interface TransactionsState {
   addManual: (input: NewManualTransaction) => Promise<Transaction>;
   confirmPending: (id: string, corrections?: { accountId?: string; categoryId?: string | null }) => Promise<void>;
   rejectPending: (id: string) => Promise<void>;
+  update: (
+    id: string,
+    patch: {
+      accountId: string;
+      toAccountId?: string | null;
+      type: Transaction['type'];
+      amount: number;
+      categoryId?: string | null;
+      occurredAt: string;
+      note?: string | null;
+    }
+  ) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -66,6 +78,13 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const { transactions } = await getRepositories();
     await transactions.reject(id);
     set({ pending: get().pending.filter((tx) => tx.id !== id) });
+  },
+
+  async update(id, patch) {
+    const { transactions } = await getRepositories();
+    await transactions.update(id, patch);
+    await Promise.all([get().load(), useAccountsStore.getState().load()]);
+    void alertsService.evaluateAndNotify();
   },
 
   async remove(id) {

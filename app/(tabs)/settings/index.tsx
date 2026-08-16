@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, ListItem, Screen, TextField, Toggle } from '@/components/ui';
+import { Button, Card, IconPicker, ListItem, Screen, TextField, Toggle } from '@/components/ui';
 import { useCategoriesStore } from '@/state/categoriesStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
@@ -12,6 +13,7 @@ export default function SettingsScreen() {
   const loadCategories = useCategoriesStore((s) => s.load);
   const addCategory = useCategoriesStore((s) => s.addCategory);
   const [newCategory, setNewCategory] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const colors = useThemeStore((s) => s.colors);
@@ -27,8 +29,9 @@ export default function SettingsScreen() {
     if (!newCategory.trim()) return;
     setSubmitting(true);
     try {
-      await addCategory({ name: newCategory.trim() });
+      await addCategory({ name: newCategory.trim(), icon: newCategoryIcon });
       setNewCategory('');
+      setNewCategoryIcon(null);
     } finally {
       setSubmitting(false);
     }
@@ -69,7 +72,20 @@ export default function SettingsScreen() {
         {categories.length === 0 ? (
           <Text style={styles.hint}>Aucune catégorie pour le moment.</Text>
         ) : (
-          categories.map((category) => <ListItem key={category.id} title={category.name} />)
+          categories.map((category) => (
+            <ListItem
+              key={category.id}
+              title={category.name}
+              left={
+                <Ionicons
+                  name={(category.icon as keyof typeof Ionicons.glyphMap) ?? 'pricetag-outline'}
+                  size={20}
+                  color={colors.text.secondary}
+                />
+              }
+              onPress={() => router.push(`/settings/categories/${category.id}`)}
+            />
+          ))
         )}
       </Card>
       <View style={styles.addCategoryRow}>
@@ -84,6 +100,7 @@ export default function SettingsScreen() {
           style={styles.addCategoryButton}
         />
       </View>
+      <IconPicker value={newCategoryIcon} onChange={setNewCategoryIcon} />
 
       <Text style={styles.version}>MManagment v1.0.0</Text>
     </Screen>

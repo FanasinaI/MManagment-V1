@@ -4,6 +4,7 @@ export { ChoiceChips } from './ChoiceChips';
 export { Card } from './Card';
 export { DateField } from './DateField';
 export { EmptyState } from './EmptyState';
+export { IconPicker, CATEGORY_ICONS } from './IconPicker';
 export { ListItem } from './ListItem';
 export { ProgressBar } from './ProgressBar';
 export { Screen } from './Screen';

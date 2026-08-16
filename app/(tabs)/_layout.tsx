@@ -81,7 +81,7 @@ export default function TabsLayout() {
           tabBarButton: (props) => <FabTabButton onPress={props.onPress} />,
         }}
       />
-      <Tabs.Screen name="savings/goals" options={{ title: 'Objectifs', tabBarIcon: tabIcon('flag-outline', 'flag') }} />
+      <Tabs.Screen name="savings/goals/index" options={{ title: 'Objectifs', tabBarIcon: tabIcon('flag-outline', 'flag') }} />
       <Tabs.Screen
         name="settings/index"
         options={{ title: 'Profil', tabBarIcon: tabIcon('person-outline', 'person') }}
@@ -98,7 +98,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="budgets/new" options={{ href: null, title: 'Nouveau budget' }} />
       <Tabs.Screen name="savings/index" options={{ href: null, title: 'Épargne' }} />
       <Tabs.Screen name="savings/new" options={{ href: null, title: 'Nouvelle poche' }} />
-      <Tabs.Screen name="savings/goals-new" options={{ href: null, title: 'Nouvel objectif' }} />
+      <Tabs.Screen name="savings/[id]" options={{ href: null, title: 'Modifier la poche' }} />
+      <Tabs.Screen name="savings/goals/new" options={{ href: null, title: 'Nouvel objectif' }} />
+      <Tabs.Screen name="savings/goals/[id]" options={{ href: null, title: "Modifier l'objectif" }} />
+      <Tabs.Screen name="budgets/[id]" options={{ href: null, title: 'Modifier le budget' }} />
+      <Tabs.Screen name="settings/categories/[id]" options={{ href: null, title: 'Modifier la catégorie' }} />
       <Tabs.Screen name="stats" options={{ href: null, title: 'Statistiques' }} />
       <Tabs.Screen name="settings/security" options={{ href: null, title: 'Sécurité' }} />
       <Tabs.Screen name="settings/alerts" options={{ href: null, title: 'Alertes' }} />

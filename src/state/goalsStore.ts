@@ -16,6 +16,10 @@ interface GoalsState {
   addGoal: (input: NewGoal) => Promise<Goal>;
   /** Moves `amount` out of `accountId` and into the goal — a contribution always has a real source. */
   contribute: (id: string, amount: number, accountId: string) => Promise<void>;
+  /** Moves `amount` out of the goal and back into `accountId`. */
+  withdraw: (id: string, amount: number, accountId: string) => Promise<void>;
+  updateGoal: (id: string, patch: { name: string; targetAmount: number; targetDate: string | null }) => Promise<void>;
+  removeGoal: (id: string) => Promise<void>;
 }
 
 export const useGoalsStore = create<GoalsState>((set, get) => ({
@@ -44,5 +48,25 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
     void alertsService.evaluateAndNotify();
+  },
+
+  async withdraw(id, amount, accountId) {
+    const goal = get().goals.find((g) => g.id === id);
+    const { goals } = await getRepositories();
+    await goals.withdrawToAccount(id, accountId, amount, goal?.name ?? 'Objectif');
+    set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount - amount } : g)) });
+    await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+  },
+
+  async updateGoal(id, patch) {
+    const { goals } = await getRepositories();
+    await goals.update(id, patch);
+    set({ goals: get().goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
+  },
+
+  async removeGoal(id) {
+    const { goals } = await getRepositories();
+    await goals.remove(id);
+    set({ goals: get().goals.filter((g) => g.id !== id) });
   },
 }));

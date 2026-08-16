@@ -13,6 +13,7 @@ export default function SavingsScreen() {
   const pockets = useSavingsStore((s) => s.pockets);
   const load = useSavingsStore((s) => s.load);
   const deposit = useSavingsStore((s) => s.deposit);
+  const withdraw = useSavingsStore((s) => s.withdraw);
   const accounts = useAccountsStore((s) => s.accounts);
   const loadAccounts = useAccountsStore((s) => s.load);
   const colors = useThemeStore((s) => s.colors);
@@ -40,6 +41,8 @@ export default function SavingsScreen() {
             pocket={pocket}
             accounts={accounts}
             onDeposit={(amount, accountId) => deposit(pocket.id, amount, accountId)}
+            onWithdraw={(amount, accountId) => withdraw(pocket.id, amount, accountId)}
+            onEdit={() => router.push(`/savings/${pocket.id}`)}
           />
         ))
       )}

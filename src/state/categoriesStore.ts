@@ -8,6 +8,8 @@ interface CategoriesState {
   loading: boolean;
   load: () => Promise<void>;
   addCategory: (input: { name: string; icon?: string | null }) => Promise<Category>;
+  updateCategory: (id: string, patch: { name: string; icon: string | null }) => Promise<void>;
+  removeCategory: (id: string) => Promise<void>;
 }
 
 export const useCategoriesStore = create<CategoriesState>((set, get) => ({
@@ -26,5 +28,17 @@ export const useCategoriesStore = create<CategoriesState>((set, get) => ({
     const created = await categories.create(input);
     set({ categories: [...get().categories, created] });
     return created;
+  },
+
+  async updateCategory(id, patch) {
+    const { categories } = await getRepositories();
+    await categories.update(id, patch);
+    set({ categories: get().categories.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+  },
+
+  async removeCategory(id) {
+    const { categories } = await getRepositories();
+    await categories.remove(id);
+    set({ categories: get().categories.filter((c) => c.id !== id) });
   },
 }));

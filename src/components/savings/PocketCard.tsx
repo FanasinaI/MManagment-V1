@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, ChoiceChips, ProgressBar, TextField } from '@/components/ui';
 import { computeSavingsProgress } from '@/domain/finance/savingsEngine';
@@ -13,9 +14,17 @@ interface PocketCardProps {
   pocket: SavingsPocket;
   accounts: Account[];
   onDeposit: (amount: number, accountId: string) => Promise<void>;
+  onWithdraw: (amount: number, accountId: string) => Promise<void>;
+  onEdit: () => void;
 }
 
-export function PocketCard({ pocket, accounts, onDeposit }: PocketCardProps) {
+const MODE_OPTIONS: { value: 'deposit' | 'withdraw'; label: string }[] = [
+  { value: 'deposit', label: 'Verser' },
+  { value: 'withdraw', label: 'Retirer' },
+];
+
+export function PocketCard({ pocket, accounts, onDeposit, onWithdraw, onEdit }: PocketCardProps) {
+  const [mode, setMode] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -23,12 +32,18 @@ export function PocketCard({ pocket, accounts, onDeposit }: PocketCardProps) {
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
-  async function handleDeposit() {
-    const value = Number.parseFloat(amount.replace(',', '.'));
-    if (!value || value <= 0 || !accountId) return;
+  const value = Number.parseFloat(amount.replace(',', '.'));
+  const isValid = Boolean(value) && value > 0 && accountId !== null && (mode === 'deposit' || value <= pocket.balance);
+
+  async function handleSubmit() {
+    if (!isValid || !accountId) return;
     setSubmitting(true);
     try {
-      await onDeposit(value, accountId);
+      if (mode === 'deposit') {
+        await onDeposit(value, accountId);
+      } else {
+        await onWithdraw(value, accountId);
+      }
       setAmount('');
     } finally {
       setSubmitting(false);
@@ -37,7 +52,12 @@ export function PocketCard({ pocket, accounts, onDeposit }: PocketCardProps) {
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.name}>{pocket.name}</Text>
+      <View style={styles.header}>
+        <Text style={styles.name}>{pocket.name}</Text>
+        <Pressable onPress={onEdit} hitSlop={8}>
+          <Ionicons name="pencil-outline" size={18} color={colors.text.secondary} />
+        </Pressable>
+      </View>
       {progress.progressRatio !== null ? (
         <>
           <ProgressBar ratio={progress.progressRatio} />
@@ -53,17 +73,27 @@ export function PocketCard({ pocket, accounts, onDeposit }: PocketCardProps) {
         <Text style={styles.hint}>Ajoute un compte avant de pouvoir y verser de l'épargne.</Text>
       ) : (
         <>
-          <Text style={styles.label}>Depuis quel compte ?</Text>
+          <ChoiceChips options={MODE_OPTIONS} value={mode} onChange={setMode} />
+          <Text style={styles.label}>{mode === 'deposit' ? 'Depuis quel compte ?' : 'Vers quel compte ?'}</Text>
           <ChoiceChips options={accounts.map((a) => ({ value: a.id, label: a.name }))} value={accountId} onChange={setAccountId} />
+          {mode === 'withdraw' && value > pocket.balance ? (
+            <Text style={styles.warning}>Le montant dépasse le solde de la poche.</Text>
+          ) : null}
           <View style={styles.depositRow}>
             <View style={styles.depositInput}>
-              <TextField label="Versement (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
+              <TextField
+                label={mode === 'deposit' ? 'Versement (Ar)' : 'Retrait (Ar)'}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0"
+                keyboardType="numeric"
+              />
             </View>
             <Button
-              label="Verser"
-              onPress={() => void handleDeposit()}
+              label={mode === 'deposit' ? 'Verser' : 'Retirer'}
+              onPress={() => void handleSubmit()}
               loading={submitting}
-              disabled={!amount || !accountId}
+              disabled={!isValid}
               style={styles.depositButton}
             />
           </View>
@@ -78,6 +108,11 @@ function createStyles(colors: ThemeColors) {
     card: {
       marginBottom: spacing.md,
       gap: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     name: {
       color: colors.text.primary,
@@ -95,6 +130,10 @@ function createStyles(colors: ThemeColors) {
     },
     hint: {
       color: colors.text.muted,
+      fontSize: typography.size.xs,
+    },
+    warning: {
+      color: colors.semantic.warning,
       fontSize: typography.size.xs,
     },
     depositRow: {

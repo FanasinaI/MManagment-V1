@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, ChoiceChips, ProgressBar, TextField } from '@/components/ui';
 import { computeGoalProgress } from '@/domain/finance/goalsEngine';
@@ -14,9 +15,17 @@ interface GoalCardProps {
   goal: Goal;
   accounts: Account[];
   onContribute: (amount: number, accountId: string) => Promise<void>;
+  onWithdraw: (amount: number, accountId: string) => Promise<void>;
+  onEdit: () => void;
 }
 
-export function GoalCard({ goal, accounts, onContribute }: GoalCardProps) {
+const MODE_OPTIONS: { value: 'deposit' | 'withdraw'; label: string }[] = [
+  { value: 'deposit', label: 'Ajouter' },
+  { value: 'withdraw', label: 'Retirer' },
+];
+
+export function GoalCard({ goal, accounts, onContribute, onWithdraw, onEdit }: GoalCardProps) {
+  const [mode, setMode] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -24,12 +33,18 @@ export function GoalCard({ goal, accounts, onContribute }: GoalCardProps) {
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
-  async function handleContribute() {
-    const value = Number.parseFloat(amount.replace(',', '.'));
-    if (!value || value <= 0 || !accountId) return;
+  const value = Number.parseFloat(amount.replace(',', '.'));
+  const isValid = Boolean(value) && value > 0 && accountId !== null && (mode === 'deposit' || value <= goal.currentAmount);
+
+  async function handleSubmit() {
+    if (!isValid || !accountId) return;
     setSubmitting(true);
     try {
-      await onContribute(value, accountId);
+      if (mode === 'deposit') {
+        await onContribute(value, accountId);
+      } else {
+        await onWithdraw(value, accountId);
+      }
       setAmount('');
     } finally {
       setSubmitting(false);
@@ -38,7 +53,12 @@ export function GoalCard({ goal, accounts, onContribute }: GoalCardProps) {
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.name}>{goal.name}</Text>
+      <View style={styles.header}>
+        <Text style={styles.name}>{goal.name}</Text>
+        <Pressable onPress={onEdit} hitSlop={8}>
+          <Ionicons name="pencil-outline" size={18} color={colors.text.secondary} />
+        </Pressable>
+      </View>
       <ProgressBar ratio={progress.progressRatio} color={progress.isNear ? colors.semantic.warning : colors.gold[500]} />
       <Text style={styles.amountText}>
         {formatMoney(goal.currentAmount)} / {formatMoney(goal.targetAmount)}
@@ -49,17 +69,27 @@ export function GoalCard({ goal, accounts, onContribute }: GoalCardProps) {
         <Text style={styles.hint}>Ajoute un compte avant de pouvoir contribuer à cet objectif.</Text>
       ) : (
         <>
-          <Text style={styles.label}>Depuis quel compte ?</Text>
+          <ChoiceChips options={MODE_OPTIONS} value={mode} onChange={setMode} />
+          <Text style={styles.label}>{mode === 'deposit' ? 'Depuis quel compte ?' : 'Vers quel compte ?'}</Text>
           <ChoiceChips options={accounts.map((a) => ({ value: a.id, label: a.name }))} value={accountId} onChange={setAccountId} />
+          {mode === 'withdraw' && value > goal.currentAmount ? (
+            <Text style={styles.warning}>Le montant dépasse ce qui a été épargné pour cet objectif.</Text>
+          ) : null}
           <View style={styles.contributeRow}>
             <View style={styles.contributeInput}>
-              <TextField label="Contribution (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
+              <TextField
+                label={mode === 'deposit' ? 'Contribution (Ar)' : 'Retrait (Ar)'}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0"
+                keyboardType="numeric"
+              />
             </View>
             <Button
-              label="Ajouter"
-              onPress={() => void handleContribute()}
+              label={mode === 'deposit' ? 'Ajouter' : 'Retirer'}
+              onPress={() => void handleSubmit()}
               loading={submitting}
-              disabled={!amount || !accountId}
+              disabled={!isValid}
               style={styles.contributeButton}
             />
           </View>
@@ -74,6 +104,11 @@ function createStyles(colors: ThemeColors) {
     card: {
       marginBottom: spacing.md,
       gap: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     name: {
       color: colors.text.primary,
@@ -95,6 +130,10 @@ function createStyles(colors: ThemeColors) {
     },
     hint: {
       color: colors.text.muted,
+      fontSize: typography.size.xs,
+    },
+    warning: {
+      color: colors.semantic.warning,
       fontSize: typography.size.xs,
     },
     contributeRow: {

@@ -12,6 +12,7 @@ interface BudgetsState {
   loading: boolean;
   load: () => Promise<void>;
   addBudget: (input: NewBudget) => Promise<Budget>;
+  updateBudget: (id: string, patch: NewBudget) => Promise<void>;
   removeBudget: (id: string) => Promise<void>;
 }
 
@@ -33,6 +34,12 @@ export const useBudgetsStore = create<BudgetsState>((set, get) => ({
     const categoryName = useCategoriesStore.getState().categories.find((c) => c.id === created.categoryId)?.name ?? 'catégorie';
     void notificationService.sendImmediate(notificationTemplates.budgetAdded(categoryName));
     return created;
+  },
+
+  async updateBudget(id, patch) {
+    const { budgets } = await getRepositories();
+    await budgets.update(id, patch);
+    set({ budgets: get().budgets.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
   },
 
   async removeBudget(id) {

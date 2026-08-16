@@ -168,6 +168,64 @@ export function createTransactionsRepository(db: DbConnection) {
       });
     },
 
+    /**
+     * Edits an existing transaction. If it was confirmed, its old balance
+     * effect is reversed and the new one applied — both against whatever
+     * account(s)/type were in effect before AND after, so e.g. changing the
+     * account or switching to/from "transfer" stays correct. Pending/SMS
+     * transactions have no balance effect either way, so this is a no-op on
+     * balances for those (matches confirm()'s behavior).
+     */
+    async update(
+      id: string,
+      patch: {
+        accountId: string;
+        toAccountId?: string | null;
+        type: Transaction['type'];
+        amount: number;
+        categoryId?: string | null;
+        occurredAt: string;
+        note?: string | null;
+      }
+    ): Promise<void> {
+      await db.withTransactionAsync(async () => {
+        const row = await db.getFirstAsync<TransactionRow>('SELECT * FROM transactions WHERE id = ?;', [id]);
+        if (!row) return;
+
+        if (row.status === 'confirmed') {
+          await applyBalanceEffect(
+            db,
+            { type: row.type as Transaction['type'], amount: row.amount, accountId: row.accountId, toAccountId: row.toAccountId },
+            -1
+          );
+        }
+
+        await db.runAsync(
+          `UPDATE transactions SET accountId = ?, toAccountId = ?, type = ?, amount = ?, categoryId = ?, occurredAt = ?, note = ?, updatedAt = ?
+           WHERE id = ?;`,
+          [
+            patch.accountId,
+            patch.toAccountId ?? null,
+            patch.type,
+            patch.amount,
+            patch.categoryId ?? null,
+            patch.occurredAt,
+            patch.note ?? null,
+            nowIso(),
+            id,
+          ]
+        );
+
+        if (row.status === 'confirmed') {
+          await applyBalanceEffect(
+            db,
+            { type: patch.type, amount: patch.amount, accountId: patch.accountId, toAccountId: patch.toAccountId ?? null },
+            1
+          );
+        }
+      });
+    },
+
     async reject(id: string): Promise<void> {
       await db.runAsync('UPDATE transactions SET status = ?, updatedAt = ? WHERE id = ?;', ['rejected', nowIso(), id]);
     },

@@ -39,6 +39,29 @@ export function createGoalsRepository(db: DbConnection) {
       });
     },
 
+    /** The reverse of contributeFromAccount: moves money out of the goal and back into a real account, logged the same way. */
+    async withdrawToAccount(id: string, accountId: string, amount: number, goalName: string): Promise<void> {
+      const now = nowIso();
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('UPDATE goals SET currentAmount = currentAmount - ? WHERE id = ?;', [amount, id]);
+        await db.runAsync('UPDATE accounts SET balance = balance + ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
+        await db.runAsync(
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+           VALUES (?, ?, NULL, 'transfer', ?, NULL, 'manual', 'confirmed', ?, NULL, ?);`,
+          [generateId(), accountId, amount, now, `Retrait depuis l'objectif « ${goalName} »`]
+        );
+      });
+    },
+
+    async update(id: string, patch: { name: string; targetAmount: number; targetDate: string | null }): Promise<void> {
+      await db.runAsync('UPDATE goals SET name = ?, targetAmount = ?, targetDate = ? WHERE id = ?;', [
+        patch.name,
+        patch.targetAmount,
+        patch.targetDate,
+        id,
+      ]);
+    },
+
     async remove(id: string): Promise<void> {
       await db.runAsync('DELETE FROM goals WHERE id = ?;', [id]);
     },

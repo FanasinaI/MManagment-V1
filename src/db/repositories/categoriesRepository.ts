@@ -15,6 +15,10 @@ export function createCategoriesRepository(db: DbConnection) {
       return { id, name: input.name, icon: input.icon ?? null };
     },
 
+    async update(id: string, patch: { name: string; icon: string | null }): Promise<void> {
+      await db.runAsync('UPDATE categories SET name = ?, icon = ? WHERE id = ?;', [patch.name, patch.icon, id]);
+    },
+
     async remove(id: string): Promise<void> {
       await db.runAsync('DELETE FROM categories WHERE id = ?;', [id]);
     },

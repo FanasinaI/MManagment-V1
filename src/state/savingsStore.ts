@@ -15,6 +15,10 @@ interface SavingsState {
   addPocket: (input: NewSavingsPocket) => Promise<SavingsPocket>;
   /** Moves `amount` out of `accountId` and into the pocket — a deposit always has a real source. */
   deposit: (id: string, amount: number, accountId: string) => Promise<void>;
+  /** Moves `amount` out of the pocket and back into `accountId`. */
+  withdraw: (id: string, amount: number, accountId: string) => Promise<void>;
+  updatePocket: (id: string, patch: { name: string; targetAmount: number | null }) => Promise<void>;
+  removePocket: (id: string) => Promise<void>;
 }
 
 export const useSavingsStore = create<SavingsState>((set, get) => ({
@@ -42,5 +46,25 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
     await savings.depositFromAccount(id, accountId, amount, pocket?.name ?? 'Épargne');
     set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance + amount } : p)) });
     await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+  },
+
+  async withdraw(id, amount, accountId) {
+    const pocket = get().pockets.find((p) => p.id === id);
+    const { savings } = await getRepositories();
+    await savings.withdrawToAccount(id, accountId, amount, pocket?.name ?? 'Épargne');
+    set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance - amount } : p)) });
+    await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
+  },
+
+  async updatePocket(id, patch) {
+    const { savings } = await getRepositories();
+    await savings.update(id, patch);
+    set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
+  },
+
+  async removePocket(id) {
+    const { savings } = await getRepositories();
+    await savings.remove(id);
+    set({ pockets: get().pockets.filter((p) => p.id !== id) });
   },
 }));
