@@ -36,6 +36,7 @@ yarn-error.*
 
 # local tool config / assistant state — never shared with the repo
 .claude/
+CLAUDE.md
 
 # typescript
 *.tsbuildinfo
