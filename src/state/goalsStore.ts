@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import { getRepositories } from '@/db/repositories';
+import { notificationService } from '@/services/notifications/notificationService';
+import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { Goal, NewGoal } from '@/validation/goalSchema';
 
 interface GoalsState {
@@ -26,6 +28,7 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
     const { goals } = await getRepositories();
     const created = await goals.create(input);
     set({ goals: [...get().goals, created] });
+    void notificationService.sendImmediate(notificationTemplates.goalAdded(created.name));
     return created;
   },
 

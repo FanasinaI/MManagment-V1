@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { Button, Screen, TextField } from '@/components/ui';
+import { Button, DateField, Screen, TextField } from '@/components/ui';
 import { useGoalsStore } from '@/state/goalsStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
@@ -11,7 +11,7 @@ export default function NewGoalScreen() {
   const addGoal = useGoalsStore((s) => s.addGoal);
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
-  const [targetDate, setTargetDate] = useState('');
+  const [targetDate, setTargetDate] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
@@ -21,11 +21,10 @@ export default function NewGoalScreen() {
   async function handleCreate() {
     setSubmitting(true);
     try {
-      const parsedDate = targetDate.trim() ? new Date(targetDate.trim()) : null;
       await addGoal({
         name: name.trim(),
         targetAmount: Number.parseFloat(targetAmount.replace(',', '.')),
-        targetDate: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : null,
+        targetDate: targetDate ? targetDate.toISOString() : null,
       });
       router.back();
     } finally {
@@ -39,12 +38,20 @@ export default function NewGoalScreen() {
 
       <TextField label="Nom" value={name} onChangeText={setName} placeholder="Ex : Voiture" />
       <TextField label="Montant cible (Ar)" value={targetAmount} onChangeText={setTargetAmount} placeholder="0" keyboardType="numeric" />
-      <TextField
-        label="Date cible (AAAA-MM-JJ, optionnel)"
-        value={targetDate}
-        onChangeText={setTargetDate}
-        placeholder="2026-12-31"
-      />
+
+      {targetDate ? (
+        <>
+          <DateField label="Date cible" value={targetDate} onChange={setTargetDate} minimumDate={new Date()} />
+          <Button label="Retirer la date cible" variant="ghost" onPress={() => setTargetDate(null)} style={styles.removeDate} />
+        </>
+      ) : (
+        <Button
+          label="+ Ajouter une date cible"
+          variant="secondary"
+          onPress={() => setTargetDate(new Date())}
+          style={styles.addDate}
+        />
+      )}
 
       <Button label="Créer" onPress={() => void handleCreate()} disabled={!canSubmit} loading={submitting} />
     </Screen>
@@ -58,6 +65,13 @@ function createStyles(colors: ThemeColors) {
       fontSize: typography.size.xl,
       fontWeight: typography.weight.bold,
       marginTop: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    addDate: {
+      marginBottom: spacing.lg,
+    },
+    removeDate: {
+      marginTop: -spacing.sm,
       marginBottom: spacing.lg,
     },
   });

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
+import { signedAmount } from '@/domain/finance/balances';
 import { getRepositories } from '@/db/repositories';
+import { notificationService } from '@/services/notifications/notificationService';
+import { notificationTemplates } from '@/services/notifications/notificationTemplates';
+import { formatSignedMoney } from '@/utils/money';
 import type { NewManualTransaction, Transaction } from '@/validation/transactionSchema';
 
 import { useAccountsStore } from './accountsStore';
@@ -40,14 +44,19 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const created = await transactions.createManual(input);
     set({ transactions: [created, ...get().transactions] });
     await useAccountsStore.getState().load();
+    void notificationService.sendImmediate(notificationTemplates.transactionAdded(formatSignedMoney(signedAmount(created))));
     return created;
   },
 
   async confirmPending(id, corrections) {
+    const confirmedTx = get().pending.find((tx) => tx.id === id);
     const { transactions } = await getRepositories();
     await transactions.confirm(id, corrections);
     set({ pending: get().pending.filter((tx) => tx.id !== id) });
     await Promise.all([get().load(), useAccountsStore.getState().load()]);
+    if (confirmedTx) {
+      void notificationService.sendImmediate(notificationTemplates.transactionConfirmed(formatSignedMoney(signedAmount(confirmedTx))));
+    }
   },
 
   async rejectPending(id) {

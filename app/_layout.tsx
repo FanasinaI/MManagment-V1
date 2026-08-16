@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LoadingScreen } from '@/components/branding/LoadingScreen';
 import { PinGate } from '@/components/security/PinGate';
 import { getRepositories } from '@/db/repositories';
+import { notificationService } from '@/services/notifications/notificationService';
 import { appSettingsService } from '@/services/settings/appSettingsService';
 import { smsListenerService } from '@/services/sms/smsListenerService';
 import { smsPermissionService } from '@/services/sms/smsPermissionService';
@@ -28,6 +29,9 @@ export default function RootLayout() {
       await Promise.all([getRepositories(), checkStatus(), hydrateTheme()]);
       setDbReady(true);
       await SplashScreen.hideAsync().catch(() => {});
+
+      await notificationService.ensureChannel();
+      await notificationService.requestPermission();
 
       // Resume listening silently on relaunch if the user already enabled
       // detection and already granted the permission — does not re-prompt.

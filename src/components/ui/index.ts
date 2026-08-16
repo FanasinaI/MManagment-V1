@@ -2,6 +2,7 @@ export { Badge } from './Badge';
 export { Button } from './Button';
 export { ChoiceChips } from './ChoiceChips';
 export { Card } from './Card';
+export { DateField } from './DateField';
 export { EmptyState } from './EmptyState';
 export { ListItem } from './ListItem';
 export { ProgressBar } from './ProgressBar';

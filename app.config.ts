@@ -45,6 +45,7 @@ const config: ExpoConfig = {
     'expo-local-authentication',
     'expo-sharing',
     'expo-font',
+    '@react-native-community/datetimepicker',
   ],
   extra: {
     eas: {

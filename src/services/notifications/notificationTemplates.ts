@@ -25,4 +25,28 @@ export const notificationTemplates = {
     title: "Rappel d'épargne",
     body: "N'oubliez pas votre versement d'épargne du mois.",
   }),
+  accountAdded: (accountName: string): NotificationContent => ({
+    title: 'Compte ajouté',
+    body: `"${accountName}" a été ajouté à tes comptes.`,
+  }),
+  transactionAdded: (amountLabel: string): NotificationContent => ({
+    title: 'Transaction enregistrée',
+    body: amountLabel,
+  }),
+  transactionConfirmed: (amountLabel: string): NotificationContent => ({
+    title: 'Transaction confirmée',
+    body: amountLabel,
+  }),
+  budgetAdded: (categoryName: string): NotificationContent => ({
+    title: 'Budget créé',
+    body: `Un budget a été défini pour "${categoryName}".`,
+  }),
+  savingsPocketAdded: (pocketName: string): NotificationContent => ({
+    title: "Poche d'épargne créée",
+    body: `"${pocketName}" a été ajoutée.`,
+  }),
+  goalAdded: (goalName: string): NotificationContent => ({
+    title: 'Objectif créé',
+    body: `"${goalName}" a été ajouté à tes objectifs.`,
+  }),
 };

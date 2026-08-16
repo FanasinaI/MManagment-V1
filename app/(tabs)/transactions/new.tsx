@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { Button, ChoiceChips, Screen, TextField } from '@/components/ui';
+import { Button, ChoiceChips, DateField, Screen, TextField } from '@/components/ui';
 import { useAccountsStore } from '@/state/accountsStore';
 import { useCategoriesStore } from '@/state/categoriesStore';
 import { useThemeStore } from '@/state/themeStore';
@@ -30,6 +30,7 @@ export default function NewTransactionScreen() {
   const [type, setType] = useState<Transaction['type'] | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [occurredAt, setOccurredAt] = useState(() => new Date());
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const colors = useThemeStore((s) => s.colors);
@@ -51,7 +52,7 @@ export default function NewTransactionScreen() {
         type,
         amount: Number.parseFloat(amount.replace(',', '.')),
         categoryId,
-        occurredAt: new Date().toISOString(),
+        occurredAt: occurredAt.toISOString(),
         note: note.trim() || undefined,
       });
       router.back();
@@ -82,6 +83,7 @@ export default function NewTransactionScreen() {
       ) : null}
 
       <TextField label="Montant (Ar)" value={amount} onChangeText={setAmount} placeholder="0" keyboardType="numeric" />
+      <DateField label="Date" value={occurredAt} onChange={setOccurredAt} maximumDate={new Date()} />
       <TextField label="Note (optionnel)" value={note} onChangeText={setNote} placeholder="Ex : Courses au marché" />
 
       <Button label="Enregistrer" onPress={() => void handleCreate()} disabled={!canSubmit} loading={submitting} />

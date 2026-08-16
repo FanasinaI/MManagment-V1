@@ -36,7 +36,13 @@ export default function SettingsScreen() {
 
   return (
     <Screen scroll>
-      <Text style={styles.heading}>Paramètres</Text>
+      <Text style={styles.heading}>Profil</Text>
+
+      <Card style={styles.card}>
+        <ListItem title="Comptes" subtitle="Voir et gérer tes comptes" onPress={() => router.push('/accounts')} />
+        <ListItem title="Budgets" subtitle="Limites par catégorie" onPress={() => router.push('/budgets')} />
+        <ListItem title="Épargne" subtitle="Poches d'épargne" onPress={() => router.push('/savings')} />
+      </Card>
 
       <Card style={styles.card}>
         <ListItem

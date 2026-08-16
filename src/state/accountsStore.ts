@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import { getRepositories } from '@/db/repositories';
+import { notificationService } from '@/services/notifications/notificationService';
+import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { Account, NewAccount } from '@/validation/accountSchema';
 
 interface AccountsState {
@@ -25,6 +27,7 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     const { accounts } = await getRepositories();
     const created = await accounts.create(input);
     set({ accounts: [...get().accounts, created] });
+    void notificationService.sendImmediate(notificationTemplates.accountAdded(created.name));
     return created;
   },
 }));

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import { getRepositories } from '@/db/repositories';
+import { notificationService } from '@/services/notifications/notificationService';
+import { notificationTemplates } from '@/services/notifications/notificationTemplates';
 import type { NewSavingsPocket, SavingsPocket } from '@/validation/savingsSchema';
 
 interface SavingsState {
@@ -26,6 +28,7 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
     const { savings } = await getRepositories();
     const created = await savings.create(input);
     set({ pockets: [...get().pockets, created] });
+    void notificationService.sendImmediate(notificationTemplates.savingsPocketAdded(created.name));
     return created;
   },
 
