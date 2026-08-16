@@ -7,6 +7,8 @@ import type { OnSmsReceivedEventPayload } from '@modules/sms-receiver/src/SmsRec
 interface NativeSmsReceiverModule {
   requestPermission(): Promise<boolean>;
   isPermissionGranted(): Promise<boolean>;
+  startForegroundListening(): void;
+  stopForegroundListening(): void;
   addListener(
     eventName: 'onSmsReceived',
     listener: (event: OnSmsReceivedEventPayload) => void
@@ -52,5 +54,13 @@ export class AndroidSmsReceiver implements SmsReceiver {
       onMessage({ sender: event.sender, body: event.body, receivedAt: event.receivedAt });
     });
     return () => subscription.remove();
+  }
+
+  startBackgroundListening(): void {
+    getNativeModule()?.startForegroundListening();
+  }
+
+  stopBackgroundListening(): void {
+    getNativeModule()?.stopForegroundListening();
   }
 }

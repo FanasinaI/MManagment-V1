@@ -59,7 +59,7 @@ export default function OnboardingScreen() {
       <Text style={styles.title}>Bienvenue sur MManagment</Text>
       <Text style={styles.subtitle}>Choisis un nom d'utilisateur et un code PIN pour protéger tes données.</Text>
 
-      <TextField label="Nom d'utilisateur" value={username} onChangeText={setUsername} placeholder="Ex : Mirado" autoCapitalize="words" />
+      <TextField label="Nom d'utilisateur" value={username} onChangeText={setUsername} placeholder="Ex : Fanasina" autoCapitalize="words" />
 
       <TextField
         label="Code PIN"

@@ -11,6 +11,14 @@ export interface SmsReceiver {
   isPermissionGranted(): Promise<boolean>;
   /** Returns an unsubscribe function. */
   subscribe(onMessage: (msg: RawSmsMessage) => void): () => void;
+  /**
+   * Keeps `subscribe`'s callback firing even after the app is closed
+   * (Android: a foreground service with a mandatory persistent
+   * notification — see modules/sms-receiver's SmsListenerForegroundService).
+   * No-op on platforms/stubs that can't support this.
+   */
+  startBackgroundListening(): void;
+  stopBackgroundListening(): void;
 }
 
 /**
@@ -40,4 +48,8 @@ export class UnavailableSmsReceiver implements SmsReceiver {
     );
     return () => {};
   }
+
+  startBackgroundListening(): void {}
+
+  stopBackgroundListening(): void {}
 }

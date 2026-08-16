@@ -30,11 +30,13 @@ export const smsListenerService = {
     unsubscribe = receiver.subscribe((msg) => {
       void processMessage(msg);
     });
+    receiver.startBackgroundListening();
   },
 
   stop(): void {
     unsubscribe?.();
     unsubscribe = null;
+    receiver.stopBackgroundListening();
   },
 };
 
