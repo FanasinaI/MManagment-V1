@@ -25,11 +25,25 @@ export function createSavingsRepository(db: DbConnection) {
       await db.runAsync('UPDATE savings SET balance = balance + ? WHERE id = ?;', [delta, id]);
     },
 
-    /** Moves money out of a real account and into the pocket atomically — a deposit has to come from somewhere. */
-    async depositFromAccount(pocketId: string, accountId: string, amount: number): Promise<void> {
+    /**
+     * Moves money out of a real account and into the pocket atomically — a
+     * deposit has to come from somewhere — and logs it as a transaction so
+     * it's visible in the transactions list/history, not just as a silent
+     * balance change. Logged as type "transfer" (excluded from cashflow /
+     * expense stats, like an account-to-account transfer) with a negative
+     * amount so it displays as an outflow from that account; `toAccountId`
+     * stays null since a savings pocket isn't a row in `accounts`.
+     */
+    async depositFromAccount(pocketId: string, accountId: string, amount: number, pocketName: string): Promise<void> {
+      const now = nowIso();
       await db.withTransactionAsync(async () => {
         await db.runAsync('UPDATE savings SET balance = balance + ? WHERE id = ?;', [amount, pocketId]);
-        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, nowIso(), accountId]);
+        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
+        await db.runAsync(
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+           VALUES (?, ?, NULL, 'transfer', ?, NULL, 'manual', 'confirmed', ?, NULL, ?);`,
+          [generateId(), accountId, -amount, now, `Versement vers l'épargne « ${pocketName} »`]
+        );
       });
     },
 

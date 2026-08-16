@@ -19,10 +19,13 @@ interface QuickAction {
 const ACTIONS: QuickAction[] = [
   { label: 'Transaction', subtitle: 'Revenu, dépense, frais…', icon: 'card', pathname: '/transactions/new' },
   { label: 'Transfert entre comptes', subtitle: 'Déplacer de l’argent d’un compte à un autre', icon: 'swap-horizontal', pathname: '/transactions/new', params: { type: 'transfer' } },
-  { label: 'Compte', subtitle: 'MVola, banque, espèces…', icon: 'wallet', pathname: '/accounts/new' },
-  { label: 'Objectif', subtitle: 'Fixer un montant cible', icon: 'flag', pathname: '/savings/goals-new' },
-  { label: "Poche d'épargne", subtitle: 'Mettre de l’argent de côté', icon: 'save', pathname: '/savings/new' },
-  { label: 'Budget', subtitle: 'Limiter une catégorie', icon: 'pie-chart', pathname: '/budgets/new' },
+  // These four link to their list screen, not a blank "new" form — you see
+  // what you already have (and can still create from there) instead of
+  // jumping straight into creation without any context.
+  { label: 'Compte', subtitle: 'Voir et ajouter des comptes', icon: 'wallet', pathname: '/accounts' },
+  { label: 'Objectif', subtitle: 'Voir et ajouter des objectifs', icon: 'flag', pathname: '/savings/goals' },
+  { label: "Poche d'épargne", subtitle: 'Voir et alimenter tes poches d’épargne', icon: 'save', pathname: '/savings' },
+  { label: 'Budget', subtitle: 'Voir et ajouter des budgets', icon: 'pie-chart', pathname: '/budgets' },
 ];
 
 export default function QuickAddScreen() {

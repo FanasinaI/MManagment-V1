@@ -6,6 +6,7 @@ import { notificationTemplates } from '@/services/notifications/notificationTemp
 import type { NewSavingsPocket, SavingsPocket } from '@/validation/savingsSchema';
 
 import { useAccountsStore } from './accountsStore';
+import { useTransactionsStore } from './transactionsStore';
 
 interface SavingsState {
   pockets: SavingsPocket[];
@@ -36,9 +37,10 @@ export const useSavingsStore = create<SavingsState>((set, get) => ({
   },
 
   async deposit(id, amount, accountId) {
+    const pocket = get().pockets.find((p) => p.id === id);
     const { savings } = await getRepositories();
-    await savings.depositFromAccount(id, accountId, amount);
+    await savings.depositFromAccount(id, accountId, amount, pocket?.name ?? 'Épargne');
     set({ pockets: get().pockets.map((p) => (p.id === id ? { ...p, balance: p.balance + amount } : p)) });
-    await useAccountsStore.getState().load();
+    await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
   },
 }));

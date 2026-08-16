@@ -21,11 +21,21 @@ export function createGoalsRepository(db: DbConnection) {
       return { id, name: input.name, targetAmount: input.targetAmount, currentAmount: 0, targetDate: input.targetDate ?? null };
     },
 
-    /** Moves money out of a real account and into the goal atomically — same "where does it come from" fix as savings pockets. */
-    async contributeFromAccount(id: string, accountId: string, amount: number): Promise<void> {
+    /**
+     * Moves money out of a real account and into the goal atomically, and
+     * logs it as a transaction (same reasoning as savingsRepository's
+     * depositFromAccount) so it shows up in the transactions history.
+     */
+    async contributeFromAccount(id: string, accountId: string, amount: number, goalName: string): Promise<void> {
+      const now = nowIso();
       await db.withTransactionAsync(async () => {
         await db.runAsync('UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ?;', [amount, id]);
-        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, nowIso(), accountId]);
+        await db.runAsync('UPDATE accounts SET balance = balance - ?, updatedAt = ? WHERE id = ?;', [amount, now, accountId]);
+        await db.runAsync(
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
+           VALUES (?, ?, NULL, 'transfer', ?, NULL, 'manual', 'confirmed', ?, NULL, ?);`,
+          [generateId(), accountId, -amount, now, `Contribution à l'objectif « ${goalName} »`]
+        );
       });
     },
 

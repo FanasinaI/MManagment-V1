@@ -125,7 +125,7 @@ export default function TransactionsScreen() {
             return (
               <ListItem
                 key={tx.id}
-                title={(tx.categoryId && categoryNames.get(tx.categoryId)) || TYPE_LABELS[tx.type]}
+                title={(tx.categoryId && categoryNames.get(tx.categoryId)) || tx.note || TYPE_LABELS[tx.type]}
                 subtitle={`${accountNames.get(tx.accountId) ?? ''} · ${formatDate(new Date(tx.occurredAt))}`}
                 right={
                   <Text

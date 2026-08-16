@@ -7,6 +7,7 @@ import { notificationTemplates } from '@/services/notifications/notificationTemp
 import type { Goal, NewGoal } from '@/validation/goalSchema';
 
 import { useAccountsStore } from './accountsStore';
+import { useTransactionsStore } from './transactionsStore';
 
 interface GoalsState {
   goals: Goal[];
@@ -37,10 +38,11 @@ export const useGoalsStore = create<GoalsState>((set, get) => ({
   },
 
   async contribute(id, amount, accountId) {
+    const goal = get().goals.find((g) => g.id === id);
     const { goals } = await getRepositories();
-    await goals.contributeFromAccount(id, accountId, amount);
+    await goals.contributeFromAccount(id, accountId, amount, goal?.name ?? 'Objectif');
     set({ goals: get().goals.map((g) => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)) });
-    await useAccountsStore.getState().load();
+    await Promise.all([useAccountsStore.getState().load(), useTransactionsStore.getState().load()]);
     void alertsService.evaluateAndNotify();
   },
 }));

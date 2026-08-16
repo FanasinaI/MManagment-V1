@@ -53,12 +53,12 @@ export default function TransactionDetailScreen() {
           {formatSignedMoney(delta)}
         </Text>
         <DetailRow styles={styles} label="Type" value={TYPE_LABELS[transaction.type]} />
-        <DetailRow styles={styles} label={transaction.type === 'transfer' ? 'Compte source' : 'Compte'} value={accountName ?? '—'} />
-        {transaction.type === 'transfer' ? (
+        <DetailRow styles={styles} label={transaction.toAccountId ? 'Compte source' : 'Compte'} value={accountName ?? '—'} />
+        {transaction.toAccountId ? (
           <DetailRow styles={styles} label="Compte destination" value={toAccountName ?? '—'} />
-        ) : (
+        ) : transaction.type !== 'transfer' ? (
           <DetailRow styles={styles} label="Catégorie" value={categoryName ?? '—'} />
-        )}
+        ) : null}
         <DetailRow styles={styles} label="Date" value={formatDate(new Date(transaction.occurredAt))} />
         <DetailRow styles={styles} label="Source" value={transaction.source === 'sms' ? 'SMS' : 'Manuelle'} />
         <DetailRow styles={styles} label="Statut" value={transaction.status} />
