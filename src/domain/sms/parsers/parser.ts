@@ -26,6 +26,23 @@ export function extractReference(body: string): string | undefined {
 }
 
 /**
+ * Distinct from extractAmount: a mobile money/bank SMS commonly reports the
+ * *post-transaction* balance alongside the transaction amount itself (e.g.
+ * "Nouveau solde: 150000 Ar"), and this pulls that number specifically —
+ * looking for "solde" followed by up to a few words of filler ("actuel",
+ * "disponible", ":", ...) before the figure, so it doesn't need an exact
+ * phrase match. Returns null when the SMS never mentions a balance.
+ */
+export function extractReportedBalance(body: string): number | null {
+  const match = body.match(/solde[^\d]{0,20}([\d][\d\s.,]*\d|\d)\s?(?:Ar\b|Ariary|MGA)/i);
+  if (!match) return null;
+  const digitsOnly = match[1].replace(/\D/g, '');
+  if (!digitsOnly) return null;
+  const value = Number.parseInt(digitsOnly, 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
  * Returns the transaction type for the first matching verb phrase. `verbMap`
  * keys are checked in insertion order, so put longer/more specific phrases
  * before shorter ones that could also match.

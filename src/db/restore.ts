@@ -75,8 +75,17 @@ export async function restoreDatabase(db: DbConnection, payload: BackupPayload):
 
     for (const source of payload.smsSources) {
       await db.runAsync(
-        'INSERT INTO sms_sources (id, name, senderPattern, enabled, parserVersion, provider, autoConfirm) VALUES (?, ?, ?, ?, ?, ?, ?);',
-        [source.id, source.name, source.senderPattern, source.enabled ? 1 : 0, source.parserVersion, source.provider, source.autoConfirm ? 1 : 0]
+        'INSERT INTO sms_sources (id, name, senderPattern, enabled, parserVersion, provider, autoConfirm, accountId) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+        [
+          source.id,
+          source.name,
+          source.senderPattern,
+          source.enabled ? 1 : 0,
+          source.parserVersion,
+          source.provider,
+          source.autoConfirm ? 1 : 0,
+          source.accountId,
+        ]
       );
     }
 
@@ -101,9 +110,22 @@ export async function restoreDatabase(db: DbConnection, payload: BackupPayload):
 
     for (const tx of payload.transactions) {
       await db.runAsync(
-        `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-        [tx.id, tx.accountId, tx.toAccountId, tx.type, tx.amount, tx.categoryId, tx.source, tx.status, tx.occurredAt, tx.hash, tx.note]
+        `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note, reportedBalance)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          tx.id,
+          tx.accountId,
+          tx.toAccountId,
+          tx.type,
+          tx.amount,
+          tx.categoryId,
+          tx.source,
+          tx.status,
+          tx.occurredAt,
+          tx.hash,
+          tx.note,
+          tx.reportedBalance,
+        ]
       );
     }
   });

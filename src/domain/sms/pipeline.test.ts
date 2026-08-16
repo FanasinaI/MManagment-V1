@@ -80,7 +80,13 @@ describe('processIncomingSms', () => {
     );
     expect(outcome.kind).toBe('pending_transaction');
     if (outcome.kind === 'pending_transaction') {
-      expect(outcome.draft).toMatchObject({ amount: 100000, type: 'income', currency: 'MGA', reference: 'MV12345678' });
+      expect(outcome.draft).toMatchObject({
+        amount: 100000,
+        type: 'income',
+        currency: 'MGA',
+        reference: 'MV12345678',
+        reportedBalance: 150000,
+      });
       expect(outcome.sourceId).toBe('src-mvola');
     }
   });
@@ -94,7 +100,7 @@ describe('processIncomingSms', () => {
     );
     expect(outcome.kind).toBe('pending_transaction');
     if (outcome.kind === 'pending_transaction') {
-      expect(outcome.draft).toMatchObject({ amount: 50000, type: 'income' });
+      expect(outcome.draft).toMatchObject({ amount: 50000, type: 'income', reportedBalance: 80000 });
     }
   });
 
@@ -107,7 +113,7 @@ describe('processIncomingSms', () => {
     );
     expect(outcome.kind).toBe('pending_transaction');
     if (outcome.kind === 'pending_transaction') {
-      expect(outcome.draft).toMatchObject({ amount: 20000, type: 'expense' });
+      expect(outcome.draft).toMatchObject({ amount: 20000, type: 'expense', reportedBalance: 60000 });
     }
   });
 

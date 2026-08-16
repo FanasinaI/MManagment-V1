@@ -19,6 +19,7 @@ const data: ExcelExportData = {
       occurredAt: '2026-08-01T00:00:00.000Z',
       hash: null,
       note: 'Marché',
+      reportedBalance: null,
     },
     {
       id: 't2',
@@ -32,6 +33,7 @@ const data: ExcelExportData = {
       occurredAt: '2026-08-05T00:00:00.000Z',
       hash: 'abc',
       note: null,
+      reportedBalance: 550000,
     },
   ],
   budgets: [{ id: 'b1', categoryId: 'c1', amount: 100000, period: 'monthly', threshold: 0.8 }],

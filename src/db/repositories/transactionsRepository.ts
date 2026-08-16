@@ -17,6 +17,7 @@ interface TransactionRow {
   occurredAt: string;
   hash: string | null;
   note: string | null;
+  reportedBalance: number | null;
 }
 
 function toTransaction(row: TransactionRow): Transaction {
@@ -32,6 +33,7 @@ function toTransaction(row: TransactionRow): Transaction {
     occurredAt: row.occurredAt,
     hash: row.hash,
     note: row.note,
+    reportedBalance: row.reportedBalance,
   };
 }
 
@@ -82,12 +84,13 @@ export function createTransactionsRepository(db: DbConnection) {
         occurredAt: input.occurredAt,
         hash: null,
         note: input.note ?? null,
+        reportedBalance: null,
       };
 
       await db.withTransactionAsync(async () => {
         await db.runAsync(
-          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note, reportedBalance)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
           [
             record.id,
             record.accountId,
@@ -100,6 +103,7 @@ export function createTransactionsRepository(db: DbConnection) {
             record.occurredAt,
             record.hash,
             record.note,
+            record.reportedBalance,
           ]
         );
         await applyBalanceEffect(db, record, 1);
@@ -116,6 +120,8 @@ export function createTransactionsRepository(db: DbConnection) {
       categoryId?: string | null;
       occurredAt: string;
       hash: string;
+      /** The balance the SMS itself reported, if any (extractReportedBalance) — used once, at confirm(). */
+      reportedBalance?: number | null;
     }): Promise<Transaction> {
       const id = generateId();
       const record: Transaction = {
@@ -130,10 +136,11 @@ export function createTransactionsRepository(db: DbConnection) {
         occurredAt: input.occurredAt,
         hash: input.hash,
         note: null,
+        reportedBalance: input.reportedBalance ?? null,
       };
       await db.runAsync(
-        `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        `INSERT INTO transactions (id, accountId, toAccountId, type, amount, categoryId, source, status, occurredAt, hash, note, reportedBalance)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           record.id,
           record.accountId,
@@ -146,12 +153,22 @@ export function createTransactionsRepository(db: DbConnection) {
           record.occurredAt,
           record.hash,
           record.note,
+          record.reportedBalance,
         ]
       );
       return record;
     },
 
-    /** CDC §8: user confirms a PENDING transaction, optionally correcting category/account; applies the balance change. */
+    /**
+     * CDC §8: user confirms a PENDING transaction, optionally correcting
+     * category/account. If the SMS reported a post-transaction balance and
+     * the account wasn't corrected away from the one the SMS was actually
+     * about, the account balance is set directly to that reported figure
+     * instead of just adding the transaction's delta — self-healing any
+     * prior drift instead of compounding it. Every later edit/removal still
+     * works off plain deltas (see update()/remove()), which stays correct
+     * because they're relative to this now-accurate balance.
+     */
     async confirm(id: string, corrections?: { accountId?: string; categoryId?: string | null }): Promise<void> {
       await db.withTransactionAsync(async () => {
         const row = await db.getFirstAsync<TransactionRow>('SELECT * FROM transactions WHERE id = ?;', [id]);
@@ -164,7 +181,13 @@ export function createTransactionsRepository(db: DbConnection) {
           'UPDATE transactions SET status = ?, accountId = ?, categoryId = ?, updatedAt = ? WHERE id = ?;',
           ['confirmed', accountId, categoryId, nowIso(), id]
         );
-        await applyBalanceEffect(db, { type: row.type as Transaction['type'], amount: row.amount, accountId, toAccountId: row.toAccountId }, 1);
+
+        const accountWasCorrected = corrections?.accountId !== undefined && corrections.accountId !== row.accountId;
+        if (row.reportedBalance !== null && !accountWasCorrected) {
+          await db.runAsync('UPDATE accounts SET balance = ?, updatedAt = ? WHERE id = ?;', [row.reportedBalance, nowIso(), accountId]);
+        } else {
+          await applyBalanceEffect(db, { type: row.type as Transaction['type'], amount: row.amount, accountId, toAccountId: row.toAccountId }, 1);
+        }
       });
     },
 

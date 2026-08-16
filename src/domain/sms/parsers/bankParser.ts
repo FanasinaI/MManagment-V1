@@ -1,5 +1,5 @@
 import type { TransactionType } from '../types';
-import { extractAmount, extractReference, matchOperationType, type Parser } from './parser';
+import { extractAmount, extractReference, extractReportedBalance, matchOperationType, type Parser } from './parser';
 
 // Generic bank vocabulary layered on top of the mobile-money verbs — bank SMS
 // formats vary per institution (CDC §4 lets the user add banks individually);
@@ -29,6 +29,7 @@ export const bankParser: Parser = {
       type,
       reference: extractReference(msg.body),
       occurredAt: msg.receivedAt,
+      reportedBalance: extractReportedBalance(msg.body) ?? undefined,
     };
   },
 };

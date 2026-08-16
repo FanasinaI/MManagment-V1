@@ -20,6 +20,7 @@ interface SmsSettingsState {
   addSource: (input: NewSmsSource) => Promise<SmsSourceRecord>;
   setSourceEnabled: (id: string, enabled: boolean) => Promise<void>;
   setSourceAutoConfirm: (id: string, autoConfirm: boolean) => Promise<void>;
+  setSourceAccount: (id: string, accountId: string | null) => Promise<void>;
   removeSource: (id: string) => Promise<void>;
 }
 
@@ -78,6 +79,12 @@ export const useSmsSettingsStore = create<SmsSettingsState>((set, get) => ({
     const { smsSources } = await getRepositories();
     await smsSources.setAutoConfirm(id, autoConfirm);
     set({ sources: get().sources.map((s) => (s.id === id ? { ...s, autoConfirm } : s)) });
+  },
+
+  async setSourceAccount(id, accountId) {
+    const { smsSources } = await getRepositories();
+    await smsSources.setAccount(id, accountId);
+    set({ sources: get().sources.map((s) => (s.id === id ? { ...s, accountId } : s)) });
   },
 
   async removeSource(id) {

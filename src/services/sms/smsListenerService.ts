@@ -67,14 +67,19 @@ async function processMessage(msg: { sender: string; body: string; receivedAt: s
       return;
 
     case 'pending_transaction': {
-      // CDC §11's sms_sources table has no accountId column, so the target
-      // account is resolved by matching provider (e.g. the single MVola
-      // account for a source with provider "mvola"). If several accounts
-      // share a provider, the first match wins — acceptable for the common
-      // one-account-per-provider case; revisit if that stops holding.
+      // Prefer the source's explicit accountId (set in Settings > Sources
+      // SMS — needed once a user has two accounts of the same provider,
+      // e.g. two MVola lines, since the SMS sender alone can't tell them
+      // apart). Falls back to matching the first account with the same
+      // provider, which is all CDC §11's sms_sources table supports on its
+      // own and is still correct for the common one-account-per-provider
+      // case.
       const source = sources.find((candidate) => candidate.id === outcome.sourceId);
       const allAccounts = await accounts.list();
-      const targetAccount = source ? allAccounts.find((account) => account.provider === source.provider) : undefined;
+      const targetAccount = source
+        ? (source.accountId ? allAccounts.find((account) => account.id === source.accountId) : undefined) ??
+          allAccounts.find((account) => account.provider === source.provider)
+        : undefined;
 
       if (!targetAccount) {
         await smsEvents.log({ sourceId: outcome.sourceId, hash: outcome.hash, status: 'no_matching_account' });
@@ -87,6 +92,7 @@ async function processMessage(msg: { sender: string; body: string; receivedAt: s
         amount: outcome.draft.amount,
         occurredAt: outcome.draft.occurredAt,
         hash: outcome.hash,
+        reportedBalance: outcome.draft.reportedBalance ?? null,
       });
 
       // CDC §8: auto-validation is an explicit per-source preference, only

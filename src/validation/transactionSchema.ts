@@ -16,6 +16,8 @@ export const transactionSchema = z.object({
   occurredAt: z.string().min(1),
   hash: z.string().nullable(),
   note: z.string().nullable(),
+  /** The post-transaction balance an SMS reported, if any (see extractReportedBalance) — used once, at confirm(), to reconcile the account balance instead of just applying the delta. Always null for manual transactions. */
+  reportedBalance: z.number().nullable(),
 });
 
 export const newManualTransactionSchema = z

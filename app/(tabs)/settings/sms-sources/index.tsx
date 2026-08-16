@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { Button, Card, EmptyState, ListItem, Screen, Toggle } from '@/components/ui';
+import { Button, Card, ChoiceChips, EmptyState, ListItem, Screen, Toggle } from '@/components/ui';
+import { useAccountsStore } from '@/state/accountsStore';
 import { AUTO_CONFIRM_RELIABILITY_THRESHOLD, useSmsSettingsStore } from '@/state/smsSettingsStore';
 import { useThemeStore } from '@/state/themeStore';
 import { spacing, type ThemeColors, typography } from '@/theme';
@@ -23,12 +24,16 @@ export default function SmsSourcesScreen() {
   const load = useSmsSettingsStore((s) => s.load);
   const setSourceEnabled = useSmsSettingsStore((s) => s.setSourceEnabled);
   const setSourceAutoConfirm = useSmsSettingsStore((s) => s.setSourceAutoConfirm);
+  const setSourceAccount = useSmsSettingsStore((s) => s.setSourceAccount);
+  const accounts = useAccountsStore((s) => s.accounts);
+  const loadAccounts = useAccountsStore((s) => s.load);
   const colors = useThemeStore((s) => s.colors);
   const styles = createStyles(colors);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadAccounts();
+  }, [load, loadAccounts]);
 
   return (
     <Screen scroll>
@@ -61,6 +66,7 @@ export default function SmsSourcesScreen() {
       ) : (
         sources.map((source) => {
           const reliableEnough = (reliabilityCounts[source.id] ?? 0) >= AUTO_CONFIRM_RELIABILITY_THRESHOLD;
+          const matchingAccounts = accounts.filter((a) => a.provider === source.provider);
           return (
             <Card key={source.id} style={styles.card}>
               <ListItem
@@ -78,6 +84,25 @@ export default function SmsSourcesScreen() {
                 <Text style={styles.reliabilityHint}>
                   Auto-validation disponible après {AUTO_CONFIRM_RELIABILITY_THRESHOLD} détections réussies
                   ({reliabilityCounts[source.id] ?? 0}/{AUTO_CONFIRM_RELIABILITY_THRESHOLD} pour l'instant).
+                </Text>
+              )}
+
+              {matchingAccounts.length > 1 ? (
+                <>
+                  <Text style={styles.accountLabel}>
+                    Plusieurs comptes {PROVIDER_LABELS[source.provider]} — vers lequel envoyer les transactions détectées ?
+                  </Text>
+                  <ChoiceChips
+                    options={matchingAccounts.map((a) => ({ value: a.id, label: a.name }))}
+                    value={source.accountId}
+                    onChange={(accountId) => void setSourceAccount(source.id, accountId)}
+                  />
+                </>
+              ) : matchingAccounts.length === 1 ? (
+                <Text style={styles.reliabilityHint}>Compte associé : {matchingAccounts[0].name}</Text>
+              ) : (
+                <Text style={styles.warning}>
+                  Aucun compte {PROVIDER_LABELS[source.provider]} — les transactions détectées ne pourront pas être rattachées.
                 </Text>
               )}
             </Card>
@@ -116,6 +141,12 @@ function createStyles(colors: ThemeColors) {
       color: colors.text.muted,
       fontSize: typography.size.xs,
       marginTop: spacing.sm,
+    },
+    accountLabel: {
+      color: colors.text.secondary,
+      fontSize: typography.size.xs,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
     },
     newButton: {
       marginTop: spacing.lg,

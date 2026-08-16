@@ -23,6 +23,8 @@ export interface ParsedTransactionDraft {
   type: TransactionType;
   reference?: string;
   occurredAt: string; // ISO 8601
+  /** The post-transaction balance the SMS itself reports (e.g. "Nouveau solde: 150000 Ar"), when present. */
+  reportedBalance?: number;
 }
 
 export interface FinancialMarkers {

@@ -1,4 +1,4 @@
-import { extractAmount, extractReference, matchOperationType, MOBILE_MONEY_VERB_MAP, type Parser } from './parser';
+import { extractAmount, extractReference, extractReportedBalance, matchOperationType, MOBILE_MONEY_VERB_MAP, type Parser } from './parser';
 
 export const mvolaParser: Parser = {
   parse(msg) {
@@ -12,6 +12,7 @@ export const mvolaParser: Parser = {
       type,
       reference: extractReference(msg.body),
       occurredAt: msg.receivedAt,
+      reportedBalance: extractReportedBalance(msg.body) ?? undefined,
     };
   },
 };

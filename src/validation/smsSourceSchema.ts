@@ -11,6 +11,8 @@ export const smsSourceSchema = z.object({
   parserVersion: z.string().default('v1'),
   /** CDC §8: explicit user preference, only offered once a source has proven reliable (see Settings > Sources SMS). */
   autoConfirm: z.boolean().default(false),
+  /** Explicit target account for this source's transactions; null falls back to matching the first account with the same provider (see smsListenerService.ts). Needed once a user has two accounts of the same provider (e.g. two MVola lines). */
+  accountId: z.string().min(1).nullable().default(null),
 });
 
 export const newSmsSourceSchema = smsSourceSchema.omit({ id: true, parserVersion: true, autoConfirm: true });

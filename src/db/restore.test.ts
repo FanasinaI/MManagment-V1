@@ -44,6 +44,7 @@ const payload: BackupPayload = {
       occurredAt: '2026-08-01T00:00:00.000Z',
       hash: null,
       note: null,
+      reportedBalance: null,
     },
   ],
   categories: [{ id: 'cat-1', name: 'Alimentation', icon: null }],
@@ -51,7 +52,16 @@ const payload: BackupPayload = {
   savings: [{ id: 's-1', name: 'Vacances', targetAmount: 500000, balance: 20000 }],
   goals: [{ id: 'g-1', name: 'Voiture', targetAmount: 2000000, currentAmount: 300000, targetDate: null }],
   smsSources: [
-    { id: 'src-1', name: 'MVola', provider: 'mvola', senderPattern: 'MVola', enabled: true, parserVersion: 'v1', autoConfirm: false },
+    {
+      id: 'src-1',
+      name: 'MVola',
+      provider: 'mvola',
+      senderPattern: 'MVola',
+      enabled: true,
+      parserVersion: 'v1',
+      autoConfirm: false,
+      accountId: null,
+    },
   ],
   alerts: [{ id: 'al-1', type: 'low_balance', threshold: 10000, enabled: true }],
 };
