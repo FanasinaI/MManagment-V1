@@ -91,6 +91,25 @@ describe('processIncomingSms', () => {
     }
   });
 
+  it('parses a real captured MVola receipt (no "avez" before "recu")', async () => {
+    const outcome = await processIncomingSms(
+      msg('MVola', '1 000 Ar recu de MENDRIKA HENINTSOA 0340586630 le 16/08/26 a 16:50. Raison: Credit. Solde: 51 408 Ar. Ref 5526981949'),
+      sources,
+      true,
+      deps
+    );
+    expect(outcome.kind).toBe('pending_transaction');
+    if (outcome.kind === 'pending_transaction') {
+      expect(outcome.draft).toMatchObject({
+        amount: 1000,
+        type: 'income',
+        currency: 'MGA',
+        reference: '5526981949',
+        reportedBalance: 51408,
+      });
+    }
+  });
+
   it('parses a valid Airtel Money receipt into a pending transaction', async () => {
     const outcome = await processIncomingSms(
       msg('AirtelMoney', 'Vous avez recu 50000 Ar de 033 98 765 43. Solde: 80000 Ar. Ref: AM998877'),

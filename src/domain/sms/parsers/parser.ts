@@ -55,16 +55,35 @@ export function matchOperationType(body: string, verbMap: Record<string, Transac
   return null;
 }
 
-/** Shared verb vocabulary for MVola/Airtel Money/Orange Money — broadly consistent French phrasing in Madagascar. */
+/**
+ * Shared verb vocabulary for MVola/Airtel Money/Orange Money — broadly
+ * consistent French phrasing in Madagascar. Ordered most-specific-first:
+ * a concrete action word (retrait/depot/...) beats the "raison: credit/
+ * debit" direction marker, which beats the bare recu/envoye fallback.
+ *
+ * Confirmed against a real MVola receipt (2026-08-16): "1 000 Ar recu de
+ * X ... Raison: Credit. Solde: 51 408 Ar." — no "avez" in front of
+ * "recu", which is why that entry alone used to miss it entirely (it
+ * passed contentValidator's looser check, then silently failed to parse).
+ * Kept the "avez X" phrasing too in case another provider/format uses it.
+ */
 export const MOBILE_MONEY_VERB_MAP: Record<string, TransactionType> = {
-  'avez recu': 'income',
-  'avez reçu': 'income',
-  'avez envoye': 'expense',
-  'avez envoyé': 'expense',
   retrait: 'withdrawal',
   depot: 'deposit',
   dépôt: 'deposit',
   paiement: 'expense',
   achat: 'expense',
   frais: 'fee',
+  'avez recu': 'income',
+  'avez reçu': 'income',
+  'avez envoye': 'expense',
+  'avez envoyé': 'expense',
+  'raison: credit': 'income',
+  'raison : credit': 'income',
+  'raison: debit': 'expense',
+  'raison : debit': 'expense',
+  recu: 'income',
+  reçu: 'income',
+  envoye: 'expense',
+  envoyé: 'expense',
 };
